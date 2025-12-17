@@ -1,0 +1,40 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control!
+
+# REQUIRED: Your Linode API token
+linode_token = "your-linode-api-token-here"
+
+# Region (default: us-sea)
+# region = "us-sea"
+
+# Resource labels (customize if desired)
+# cluster_label             = "rag-chatbot-cluster"
+# postgres_vector_label     = "rag-vector-db"
+# postgres_conversation_label = "rag-conversation-db"
+# bucket_label              = "rag-documents"
+
+# Instance types
+# postgres_type = "g6-standard-2"  # 4GB Shared
+# lke_node_type = "g6-dedicated-4"  # 8GB Dedicated
+
+# LKE configuration
+# lke_node_count      = 3
+# lke_autoscaler_min  = 3
+# lke_autoscaler_max  = 5
+# k8s_version         = "1.34"
+# enable_ha_control_plane = true
+
+# Object storage configuration
+# enable_bucket_versioning = true
+
+# Security
+# postgres_allow_list = []  # Change to specific IPs in production!
+# ssl_connection = true
+
+# Backup configuration
+# backup_day  = "sunday"
+# backup_hour = 2
+
+# Tags
+# tags = ["rag-chatbot", "production", "terraform"]

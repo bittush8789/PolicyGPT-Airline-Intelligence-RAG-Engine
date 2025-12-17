@@ -1,0 +1,107 @@
+image:
+  repository: "REPLACE ME"
+  pullPolicy: Always
+  tag: "main"
+env:
+
+  # Regular (non-sensitive) environment variables
+  - name: S3_ENDPOINT
+    value: "REPLACE ME"
+  - name: S3_BUCKET_NAME
+    value: "REPLACE ME"
+  - name: APP_HOST
+    value: "0.0.0.0"
+  - name: APP_PORT
+    value: "8000"
+  - name: LLM_MODEL
+    value: "gpt-4o-mini"
+  - name: EMBEDDING_MODEL
+    value: "text-embedding-3-small"
+  - name: LOG_LEVEL
+    value: "INFO"
+
+  # Secret environment variables
+  - name: ADMIN_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: admin-secret
+        key: ADMIN_API_KEY
+  - name: VECTOR_DB_CONNECTION_STRING
+    valueFrom:
+      secretKeyRef:
+        name: database-secrets
+        key: VECTOR_DB_CONNECTION_STRING
+  - name: CONVERSATION_DB_CONNECTION_STRING
+    valueFrom:
+      secretKeyRef:
+        name: database-secrets
+        key: CONVERSATION_DB_CONNECTION_STRING
+  - name: S3_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: object-storage-secrets
+        key: S3_ACCESS_KEY
+  - name: S3_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: object-storage-secrets
+        key: S3_SECRET_KEY
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openai-api-key-secret
+        key: OPENAI_API_KEY
+
+secrets:
+  - admin-secret
+  - database-secrets
+  - object-storage-secrets
+  - openai-api-key-secret
+
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+  fsGroup: 65532
+
+containerSecurityContext:
+  capabilities:
+    drop:
+    - ALL
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+
+containerPorts:
+  - name: http
+    containerPort: 8000
+    protocol: TCP
+
+servicePorts:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+
+resources:
+  limits:
+     cpu: 300m
+     memory: 4Gi
+  requests:
+     cpu: 100m
+     memory: 2Gi
