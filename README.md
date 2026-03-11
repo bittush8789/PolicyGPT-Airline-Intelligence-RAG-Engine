@@ -26,7 +26,7 @@ This chatbot application was designed to demonstrate deployment to **Akamai App 
 
 ## Prerequisites
 
-- Linode account with API key
+- Create an [Akamai Cloud account here](http://login.linode.com/signup?promo=akm-dev-git-300-31126-M055) with API token (we have a $300 credit just for you) 
 - OpenAI API key
 - Terraform installed
 - kubectl installed
