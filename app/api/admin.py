@@ -12,15 +12,13 @@ import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
-from botocore.exceptions import ClientError
+from pathlib import Path
 
 from app.api.auth import verify_api_key
 from app.core.config import get_settings
 from app.core.rag import get_rag_pipeline
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import boto3
-from botocore.config import Config
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -328,53 +326,35 @@ class DatabaseInitializer:
 
 
 class DocumentIndexer:
-    """Handles indexing of documents from S3-compatible Object Storage."""
+    """Handles indexing of documents from the local documents directory."""
     
     def __init__(self):
         """Initialize the document indexer."""
         self.settings = get_settings()
-        
-        s3_config = Config(
-            signature_version='s3v4',
-            s3={'addressing_style': 'path'}
-        )
-        self.s3_client = boto3.client(
-            's3',
-            endpoint_url=self.settings.linode_object_storage_endpoint,
-            aws_access_key_id=self.settings.linode_object_storage_access_key,
-            aws_secret_access_key=self.settings.linode_object_storage_secret_key,
-            config=s3_config
-        )
-        
         self.rag_pipeline = get_rag_pipeline()
     
     def list_documents(self) -> List[Dict[str, Any]]:
-        """List all root-level documents in the Object Storage bucket (no subfolders)."""
+        """List all documents in the local documents directory."""
         try:
-            logger.info("Listing root-level documents in Object Storage...")
-            
-            response = self.s3_client.list_objects_v2(
-                Bucket=self.settings.linode_object_storage_bucket,
-                Delimiter='/'
-            )
+            logger.info("Listing documents in local documents directory...")
+            doc_dir = Path(self.settings.documents_dir)
+            if not doc_dir.exists():
+                logger.warning(f"Documents directory {doc_dir} does not exist")
+                return []
             
             documents = []
-            # Get root-level objects (not in subfolders)
-            # When using Delimiter='/', root-level objects are in 'Contents'
-            # and subfolders are in 'CommonPrefixes'
-            for obj in response.get('Contents', []):
-                key = obj['Key']
-                # Only include files at root level (no '/' in the key)
-                if '/' not in key:
+            for path in sorted(doc_dir.iterdir()):
+                if path.is_file() and path.name != "metadata.csv" and not path.name.startswith("."):
+                    stat = path.stat()
                     documents.append({
-                        "object_key": key,
-                        "filename": key,
-                        "size": obj['Size'],
-                        "last_modified": obj['LastModified'].isoformat() if hasattr(obj['LastModified'], 'isoformat') else str(obj['LastModified']),
-                        "etag": obj['ETag']
+                        "object_key": path.name,
+                        "filename": path.name,
+                        "size": stat.st_size,
+                        "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "etag": ""
                     })
             
-            logger.info(f"Found {len(documents)} root-level documents")
+            logger.info(f"Found {len(documents)} documents")
             return documents
             
         except Exception as e:
@@ -383,27 +363,21 @@ class DocumentIndexer:
     
     def load_metadata_csv(self) -> Dict[str, Dict[str, str]]:
         """
-        Load metadata.csv from S3 bucket if it exists.
+        Load metadata.csv from local documents directory if it exists.
         
         Returns:
             Dictionary mapping filename to metadata (reference_url, document_date, description, airline)
         """
         metadata = {}
         try:
-            
-            # Try to get metadata.csv
-            try:
-                response = self.s3_client.get_object(
-                    Bucket=self.settings.linode_object_storage_bucket,
-                    Key='metadata.csv'
-                )
+            csv_path = Path(self.settings.documents_dir) / "metadata.csv"
+            if not csv_path.exists():
+                logger.info("metadata.csv not found in documents directory, proceeding without metadata")
+                return metadata
                 
-                # Read CSV content
-                csv_content = response['Body'].read().decode('utf-8')
-                csv_reader = csv.DictReader(io.StringIO(csv_content))
+            with open(csv_path, "r", encoding="utf-8", errors="ignore") as f:
+                csv_reader = csv.DictReader(f)
                 
-                # Map CSV header variations to expected keys
-                # Handle both "File Name" and "file_name" formats
                 def get_value(row, possible_keys, default=''):
                     for key in possible_keys:
                         value = row.get(key, '').strip()
@@ -421,16 +395,7 @@ class DocumentIndexer:
                             'airline': get_value(row, ['Airline', 'airline'])
                         }
                 
-                logger.info(f"Loaded metadata for {len(metadata)} files from metadata.csv")
-                
-            except ClientError as e:
-                error_code = e.response.get('Error', {}).get('Code', '')
-                if error_code == 'NoSuchKey':
-                    logger.info("metadata.csv not found in bucket, proceeding without metadata")
-                else:
-                    logger.warning(f"Failed to load metadata.csv: {e}, proceeding without metadata")
-            except Exception as e:
-                logger.warning(f"Failed to load metadata.csv: {e}, proceeding without metadata")
+            logger.info(f"Loaded metadata for {len(metadata)} files from metadata.csv")
                 
         except Exception as e:
             logger.warning(f"Error loading metadata.csv: {e}, proceeding without metadata")
@@ -544,7 +509,7 @@ class DocumentIndexer:
             logger.info(f"Indexing {len(object_keys)} documents (metadata available for {len(metadata_dict)} files)...")
             
             # Index documents with metadata
-            result = self.rag_pipeline.index_documents_from_s3(object_keys, metadata_dict=metadata_dict)
+            result = self.rag_pipeline.index_documents(object_keys, metadata_dict=metadata_dict)
             
             logger.info(f"Indexing completed: {result}")
             return result
@@ -558,15 +523,19 @@ class DocumentIndexer:
                 "message": f"Failed to index documents: {str(e)}"
             }
     
-    def test_object_storage_connection(self) -> bool:
-        """Test connection to Linode Object Storage."""
+    def test_documents_directory(self) -> bool:
+        """Test that local documents directory exists and contains files."""
         try:
-            logger.info("Testing Object Storage connection...")
-            self.s3_client.head_bucket(Bucket=self.settings.linode_object_storage_bucket)
-            logger.info("Object Storage connection: OK")
-            return True
+            logger.info("Checking local documents directory...")
+            doc_dir = Path(self.settings.documents_dir)
+            exists = doc_dir.exists() and any(doc_dir.iterdir())
+            if exists:
+                logger.info("Documents directory: OK")
+            else:
+                logger.warning(f"Documents directory {doc_dir} is empty or missing")
+            return exists
         except Exception as e:
-            logger.error(f"Object Storage connection failed: {e}")
+            logger.error(f"Documents directory check failed: {e}")
             return False
 
 

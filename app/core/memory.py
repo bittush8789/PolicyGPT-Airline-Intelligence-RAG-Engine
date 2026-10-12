@@ -24,6 +24,7 @@ class ConversationState(TypedDict):
     messages: List[BaseMessage]
     thread_id: str
     user_input: str
+    airline: Optional[str]
     rag_result: Optional[Dict[str, Any]]
 
 
@@ -178,7 +179,8 @@ class ConversationMemory:
             # Combine current question with conversation context
             contextual_question = self._build_contextual_question(state["user_input"], conversation_context)
             
-            rag_result = rag_pipeline.query(contextual_question)
+            airline = state.get("airline")
+            rag_result = rag_pipeline.query(contextual_question, airline=airline)
             
             state["rag_result"] = rag_result
             logger.debug(f"RAG query processed for thread {state['thread_id']}")
@@ -274,16 +276,17 @@ Please answer the current question considering the conversation context above. I
             state["messages"].append(error_message)
             return state
     
-    def process_message(self, message: str, thread_id: Optional[str] = None) -> Dict[str, Any]:
+    def process_message(self, message: str, thread_id: Optional[str] = None, airline: Optional[str] = None) -> Dict[str, Any]:
         """
         Process a user message and return the response.
         
         Args:
             message: The user's message
             thread_id: Optional thread ID for conversation continuity
+            airline: Optional airline filter
             
         Returns:
-            Dictionary with response and thread information
+            Dictionary with response, thread, and sources information
         """
         try:
             # Generate thread ID if not provided
@@ -306,6 +309,7 @@ Please answer the current question considering the conversation context above. I
                 "messages": existing_messages + [human_message],
                 "thread_id": thread_id,
                 "user_input": message,
+                "airline": airline,
                 "rag_result": None
             }
             
@@ -318,10 +322,12 @@ Please answer the current question considering the conversation context above. I
             # Extract the response
             messages = final_state["messages"]
             ai_response = messages[-1]["content"] if messages else "No response generated."
+            sources = final_state.get("rag_result", {}).get("sources", []) if final_state.get("rag_result") else []
             
             result = {
                 "response": ai_response,
                 "thread_id": thread_id,
+                "sources": sources,
                 "message_count": len(messages),
                 "timestamp": datetime.utcnow().isoformat()
             }
@@ -334,6 +340,7 @@ Please answer the current question considering the conversation context above. I
             return {
                 "response": "I apologize, but I encountered an error while processing your message.",
                 "thread_id": thread_id or str(uuid.uuid4()),
+                "sources": [],
                 "message_count": 0,
                 "timestamp": datetime.utcnow().isoformat(),
                 "error": str(e)
@@ -445,6 +452,73 @@ Please answer the current question considering the conversation context above. I
                 "thread_id": thread_id,
                 "message": f"Failed to clear conversation: {str(e)}"
             }
+
+    def get_all_threads(self) -> List[Dict[str, Any]]:
+        """Get list of active conversation threads from PostgreSQL checkpointer."""
+        try:
+            import psycopg2
+            conn = psycopg2.connect(settings.state_db_url)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT thread_id, MAX(created_at) as last_activity, COUNT(*) as checkpoint_count
+                FROM checkpoints
+                GROUP BY thread_id
+                ORDER BY last_activity DESC
+                LIMIT 50;
+            """)
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            threads = []
+            for row in rows:
+                t_id = row[0]
+                last_time = row[1].isoformat() if hasattr(row[1], 'isoformat') else str(row[1])
+                threads.append({
+                    "thread_id": t_id,
+                    "updated_at": last_time,
+                    "checkpoint_count": row[2]
+                })
+            return threads
+        except Exception as e:
+            logger.error(f"Failed to fetch threads: {e}")
+            return []
+
+    def get_contextual_question(self, thread_id: str, current_question: str) -> str:
+        """Build contextual question using conversation history."""
+        try:
+            history = self.get_conversation_history(thread_id)
+            messages = history.get("messages", [])
+            context = self._build_conversation_context(messages, exclude_last_user_message=False)
+            return self._build_contextual_question(current_question, context)
+        except Exception as e:
+            logger.warning(f"Failed to build contextual question: {e}")
+            return current_question
+
+    def save_message_turn(self, thread_id: str, user_message: str, ai_response: str) -> None:
+        """Save a completed user/assistant turn into PostgreSQL state memory."""
+        try:
+            config = {"configurable": {"thread_id": thread_id}}
+            history = self.get_conversation_history(thread_id)
+            messages = list(history.get("messages", []))
+            
+            now = datetime.utcnow().isoformat()
+            messages.append({
+                "type": "HumanMessage",
+                "content": user_message,
+                "timestamp": now
+            })
+            messages.append({
+                "type": "AIMessage",
+                "content": ai_response,
+                "timestamp": now
+            })
+            
+            self.graph.update_state(config, {"messages": messages, "user_input": user_message})
+            logger.info(f"Saved message turn to thread {thread_id}")
+        except Exception as e:
+            logger.error(f"Failed to save message turn: {e}")
+
     
     def get_checkpointer_stats(self) -> Dict[str, Any]:
         """Get statistics about the checkpointer."""

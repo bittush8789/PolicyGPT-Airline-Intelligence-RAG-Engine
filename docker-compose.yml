@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: airline-rag-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-oss-120b}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
+      - VECTOR_DB_CONNECTION_STRING=${VECTOR_DB_CONNECTION_STRING:-postgresql://postgres:postgrespassword@postgres:5432/vectordb}
+      - CONVERSATION_DB_CONNECTION_STRING=${CONVERSATION_DB_CONNECTION_STRING:-postgresql://postgres:postgrespassword@postgres:5432/statedb}
+      - DOCUMENTS_DIR=/app/documents
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-key-123}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./app:/app/app
+      - ./documents:/app/documents:rw
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: airline-rag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

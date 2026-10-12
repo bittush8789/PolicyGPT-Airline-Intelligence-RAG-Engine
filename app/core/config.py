@@ -21,20 +21,15 @@ class Settings:
     
     def __init__(self):
         """Initialize settings from environment variables."""
-        # OpenAI Configuration
-        self.openai_api_key = self._get_required("OPENAI_API_KEY")
+        # Groq Configuration
+        self.groq_api_key = os.getenv("GROQ_API_KEY", "")
         
-        # Database Configuration
+        # Database Configuration (PostgreSQL with pgvector & LangGraph checkpoints)
         self.vector_db_url = self._get_required("VECTOR_DB_CONNECTION_STRING")
         self.state_db_url = self._get_required("CONVERSATION_DB_CONNECTION_STRING")
         
-        # Linode Object Storage Configuration
-        self.linode_object_storage_access_key = self._get_required("S3_ACCESS_KEY")
-        self.linode_object_storage_secret_key = self._get_required("S3_SECRET_KEY")
-        self.linode_object_storage_endpoint = self._ensure_https_prefix(
-            self._get_required("S3_ENDPOINT")
-        )
-        self.linode_object_storage_bucket = self._get_required("S3_BUCKET_NAME")
+        # Local Documents Directory
+        self.documents_dir = os.getenv("DOCUMENTS_DIR", str(PROJECT_ROOT / "documents"))
         
         # Application Configuration
         self.app_host = os.getenv("APP_HOST", "0.0.0.0")
@@ -48,12 +43,11 @@ class Settings:
         self.chunk_overlap = int(os.getenv("CHUNK_OVERLAP", "200"))
         self.retrieval_k = int(os.getenv("RETRIEVAL_K", "10"))
         
-        # OpenAI Model Configuration
-        self.llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
-        self.embedding_model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+        # Groq Model Configuration
+        self.llm_model = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
+        self.embedding_model = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
         
         # Admin API Configuration
-        # ADMIN_API_KEY should contain the actual API key value
         self.admin_api_key = self._get_required("ADMIN_API_KEY")
     
     def _get_required(self, env_var: str) -> str:
@@ -62,12 +56,6 @@ class Settings:
         if not value:
             raise ValueError(f"Required environment variable {env_var} is not set")
         return value
-    
-    def _ensure_https_prefix(self, endpoint: str) -> str:
-        """Ensure S3 endpoint has https:// prefix."""
-        if endpoint and not endpoint.startswith(('http://', 'https://')):
-            return f"https://{endpoint}"
-        return endpoint
 
 
 # Global settings instance
@@ -85,13 +73,8 @@ def validate_environment() -> bool:
     logger = logging.getLogger(__name__)
     
     required_vars = [
-        "OPENAI_API_KEY",
         "VECTOR_DB_CONNECTION_STRING", 
         "CONVERSATION_DB_CONNECTION_STRING",
-        "S3_ACCESS_KEY",
-        "S3_SECRET_KEY",
-        "S3_ENDPOINT",
-        "S3_BUCKET_NAME",
         "ADMIN_API_KEY"
     ]
     
@@ -105,7 +88,6 @@ def validate_environment() -> bool:
         value = os.getenv(var)
         if value:
             found_vars.append(var)
-            # Log first few chars for sensitive values, full value for non-sensitive
             if "KEY" in var or "SECRET" in var or "PASSWORD" in var or "CONNECTION_STRING" in var:
                 masked = value[:20] + "..." if len(value) > 20 else "***"
                 logger.debug(f"✓ {var}: {masked} (length: {len(value)})")
@@ -114,12 +96,20 @@ def validate_environment() -> bool:
         else:
             missing_vars.append(var)
             logger.warning(f"✗ {var}: NOT SET")
+            
+    # Check GROQ_API_KEY
+    groq_key = os.getenv("GROQ_API_KEY")
+    if not groq_key or groq_key.startswith("gsk_your"):
+        logger.warning("! GROQ_API_KEY is not configured or is a placeholder. Chat responses will require a valid Groq API key.")
+    else:
+        logger.info(f"✓ GROQ_API_KEY: {groq_key[:8]}... (configured)")
+        found_vars.append("GROQ_API_KEY")
     
-    logger.info(f"Found {len(found_vars)}/{len(required_vars)} required environment variables")
+    logger.info(f"Found {len(found_vars)} required/configured environment variables")
     
     if missing_vars:
         logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
         return False
     
-    logger.info("All required environment variables are set")
+    logger.info("All required database environment variables are set")
     return True

@@ -5,14 +5,16 @@ Handles document indexing, vector storage, and query processing.
 
 import logging
 from typing import List, Dict, Any, Optional
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain_postgres import PGVector
-from app.core.document_loader import S3DocumentLoader
+from app.core.document_loader import DocumentLoader, S3DocumentLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.embeddings import Embeddings
+from fastembed import TextEmbedding
 
 from app.core.config import get_settings
 
@@ -20,19 +22,43 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+class FastEmbeddings(Embeddings):
+    """Lightweight local text embeddings using FastEmbed (ONNX runtime)."""
+    
+    def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5"):
+        self.model_name = model_name
+        self._model = None
+        
+    @property
+    def model(self):
+        if self._model is None:
+            logger.info(f"Loading FastEmbed model: {self.model_name}")
+            self._model = TextEmbedding(model_name=self.model_name)
+        return self._model
+        
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        if not texts:
+            return []
+        return [list(map(float, vec)) for vec in self.model.embed(texts)]
+        
+    def embed_query(self, text: str) -> List[float]:
+        return list(map(float, next(self.model.embed([text]))))
+
+
 class RAGPipeline:
     """RAG pipeline for document retrieval and question answering."""
     
     def __init__(self):
         """Initialize the RAG pipeline components."""
-        self.embeddings = OpenAIEmbeddings(
-            model=settings.embedding_model,
-            openai_api_key=settings.openai_api_key
+        self.embeddings = FastEmbeddings(
+            model_name=settings.embedding_model
         )
         
-        self.llm = ChatOpenAI(
+        # Initialize ChatGroq with configured model (defaults to openai/gpt-oss-120b)
+        groq_key = settings.groq_api_key or "gsk_placeholder"
+        self.llm = ChatGroq(
             model=settings.llm_model,
-            openai_api_key=settings.openai_api_key,
+            groq_api_key=groq_key,
             temperature=0.1
         )
         
@@ -152,7 +178,7 @@ class RAGPipeline:
             )
             
             # Define the RAG prompt template
-            prompt_template = ChatPromptTemplate.from_messages([
+            self.prompt_template = ChatPromptTemplate.from_messages([
                 ("system", """You are a helpful assistant that answers questions based on the provided context. 
                 
                 Instructions:
@@ -173,7 +199,7 @@ class RAGPipeline:
             # Create the RAG chain using LangChain Expression Language (LCEL)
             self.rag_chain = (
                 {"context": self.retriever | self._format_docs, "question": RunnablePassthrough()}
-                | prompt_template
+                | self.prompt_template
                 | self.llm
                 | StrOutputParser()
             )
@@ -216,13 +242,13 @@ class RAGPipeline:
         
         return "\n\n".join(formatted_docs)
     
-    def index_documents_from_s3(self, object_keys: List[str], metadata_dict: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, Any]:
+    def index_documents(self, object_keys: List[str], metadata_dict: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, Any]:
         """
-        Index documents from S3-compatible Object Storage.
+        Index documents from the local documents directory.
         
         Args:
-            object_keys: List of object keys in the S3 bucket
-            metadata_dict: Optional dictionary mapping filename to metadata (reference_url, document_date, description)
+            object_keys: List of file names to index
+            metadata_dict: Optional dictionary mapping filename to metadata
             
         Returns:
             Dictionary with indexing results
@@ -235,12 +261,10 @@ class RAGPipeline:
             processed_docs = 0
             failed_docs = []
             
+            loader = DocumentLoader()
             for object_key in object_keys:
                 try:
                     logger.info(f"Processing document: {object_key}")
-                    
-                    # Load document from S3 using lightweight loader
-                    loader = S3DocumentLoader()
                     documents = loader.load(object_key)
                     
                     if not documents:
@@ -333,6 +357,9 @@ class RAGPipeline:
                 "message": f"Failed to index documents: {str(e)}"
             }
     
+    # Backwards compatibility alias
+    index_documents_from_s3 = index_documents
+    
 
     def _create_vector_index(self):
         """Create HNSW index for faster vector similarity search."""
@@ -422,18 +449,41 @@ class RAGPipeline:
             logger.warning(f"Could not create vector index: {e}")
             # Don't raise the exception, just log it as a warning
 
-    def query(self, question: str) -> Dict[str, Any]:
+    def retrieve_docs(self, question: str, airline: Optional[str] = None, k: Optional[int] = None) -> List[Document]:
         """
-        Query the RAG system with a question.
+        Retrieve relevant documents, optionally filtered by airline.
+        
+        Args:
+            question: Search query
+            airline: Optional airline filter (case-sensitive or normalized)
+            k: Number of chunks to retrieve
+        """
+        k = k or settings.retrieval_k
+        if airline and airline.strip() and airline.strip().lower() not in ("all", "all airlines", ""):
+            target_airline = airline.strip()
+            filter_dict = {"airline": target_airline}
+            try:
+                docs = self.vector_store.similarity_search(question, k=k, filter=filter_dict)
+                if docs:
+                    return docs
+            except Exception as e:
+                logger.warning(f"Filtered retrieval for '{target_airline}' failed: {e}")
+        
+        # Default unfiltered retrieval
+        return self.retriever.invoke(question)
+
+    def query(self, question: str, airline: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Query the RAG system with a question, optionally filtered by airline.
         
         Args:
             question: The user's question
+            airline: Optional airline name to filter documents
             
         Returns:
-            Dictionary with the answer and metadata
+            Dictionary with the answer, sources, and metadata
         """
         try:
-            # Check if this is a counting/statistics question about the document collection itself
             question_lower = question.lower()
             is_collection_stats_question = any(phrase in question_lower for phrase in [
                 'how many airlines', 'how many documents', 'how many policies', 
@@ -441,65 +491,58 @@ class RAGPipeline:
                 'number of airlines', 'count of airlines', 'total airlines'
             ])
             
-            # Get statistics if it's a collection stats question
             stats = None
             if is_collection_stats_question:
                 stats = self.get_vector_store_stats()
-                
-                # If we have stats and this is clearly about the collection, answer directly
                 if stats and stats.get("status") == "connected":
                     airline_count = stats.get('airline_count', 0)
                     airlines = sorted(stats.get('unique_airlines', []))
                     file_count = stats.get('file_count', 0)
                     
-                    # For questions about how many airlines we have documents for, answer directly
                     if 'airline' in question_lower and ('how many' in question_lower or 'number' in question_lower or 'count' in question_lower):
                         if 'list' in question_lower or 'what' in question_lower or 'which' in question_lower:
-                            # User wants a list
                             answer = f"I have policy documents for {airline_count} airlines: {', '.join(airlines)}."
                         else:
-                            # User wants a count
                             answer = f"I have policy documents for {airline_count} airlines."
-                        
-                        # Still get retrieved docs for sources, but use direct answer
-                        retrieved_docs = self.retriever.invoke(question)
+                        retrieved_docs = self.retrieve_docs(question, airline=airline)
                     else:
-                        # Other collection stats questions - enhance the question with stats
                         stats_info = f"\n\nIMPORTANT: I have policy documents for {airline_count} airlines: {', '.join(airlines)}. Total documents: {file_count}. Use these accurate statistics when answering, not information from individual documents."
                         enhanced_question = f"{question}{stats_info}"
-                        answer = self.rag_chain.invoke(enhanced_question)
-                        retrieved_docs = self.retriever.invoke(question)
+                        retrieved_docs = self.retrieve_docs(question, airline=airline)
+                        context = self._format_docs(retrieved_docs)
+                        messages = self.prompt_template.format_messages(context=context, question=enhanced_question)
+                        answer = self.llm.invoke(messages).content
                 else:
-                    # Stats failed, fall through to normal RAG
-                    answer = self.rag_chain.invoke(question)
-                    retrieved_docs = self.retriever.invoke(question)
+                    retrieved_docs = self.retrieve_docs(question, airline=airline)
+                    context = self._format_docs(retrieved_docs)
+                    messages = self.prompt_template.format_messages(context=context, question=question)
+                    answer = self.llm.invoke(messages).content
             else:
-                # Not a collection stats question, use normal RAG
-                answer = self.rag_chain.invoke(question)
-                # Get retrieved documents for context
-                # In newer LangChain versions, retrievers are callable directly
-                retrieved_docs = self.retriever.invoke(question)
+                retrieved_docs = self.retrieve_docs(question, airline=airline)
+                context = self._format_docs(retrieved_docs)
+                messages = self.prompt_template.format_messages(context=context, question=question)
+                answer = self.llm.invoke(messages).content
             
-            result = {
+            formatted_sources = [
+                {
+                    "content": doc.page_content[:250] + "..." if len(doc.page_content) > 250 else doc.page_content,
+                    "source": doc.metadata.get("source", "unknown"),
+                    "file_name": doc.metadata.get("file_name", "Unknown File"),
+                    "airline": doc.metadata.get("airline", ""),
+                    "reference_url": doc.metadata.get("reference_url", ""),
+                    "document_date": doc.metadata.get("document_date", ""),
+                    "description": doc.metadata.get("description", ""),
+                    "chunk_index": doc.metadata.get("chunk_index", 0),
+                    "total_chunks": doc.metadata.get("total_chunks", 0)
+                }
+                for doc in retrieved_docs
+            ]
+            
+            return {
                 "answer": answer,
-                "sources": [
-                    {
-                        "content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
-                        "source": doc.metadata.get("source", "unknown"),
-                        "file_name": doc.metadata.get("file_name", "Unknown File"),
-                        "airline": doc.metadata.get("airline", ""),
-                        "reference_url": doc.metadata.get("reference_url", ""),
-                        "document_date": doc.metadata.get("document_date", ""),
-                        "description": doc.metadata.get("description", ""),
-                        "chunk_index": doc.metadata.get("chunk_index", 0),
-                        "total_chunks": doc.metadata.get("total_chunks", 0)
-                    }
-                    for doc in retrieved_docs
-                ],
+                "sources": formatted_sources,
                 "retrieval_count": len(retrieved_docs)
             }
-            
-            return result
             
         except Exception as e:
             logger.error(f"Failed to process RAG query: {e}")
@@ -509,6 +552,77 @@ class RAGPipeline:
                 "retrieval_count": 0,
                 "error": str(e)
             }
+
+    def stream_query(self, question: str, airline: Optional[str] = None):
+        """
+        Stream response for the question with retrieved sources.
+        
+        Returns:
+            Tuple of (token_stream_generator, formatted_sources_list)
+        """
+        retrieved_docs = self.retrieve_docs(question, airline=airline)
+        context = self._format_docs(retrieved_docs)
+        
+        formatted_sources = [
+            {
+                "content": doc.page_content[:250] + "..." if len(doc.page_content) > 250 else doc.page_content,
+                "source": doc.metadata.get("source", "unknown"),
+                "file_name": doc.metadata.get("file_name", "Unknown File"),
+                "airline": doc.metadata.get("airline", ""),
+                "reference_url": doc.metadata.get("reference_url", ""),
+                "document_date": doc.metadata.get("document_date", ""),
+                "description": doc.metadata.get("description", ""),
+                "chunk_index": doc.metadata.get("chunk_index", 0),
+                "total_chunks": doc.metadata.get("total_chunks", 0)
+            }
+            for doc in retrieved_docs
+        ]
+        
+        messages = self.prompt_template.format_messages(context=context, question=question)
+        token_stream = self.llm.stream(messages)
+        return token_stream, formatted_sources
+
+    def index_single_document(self, file_name: str, airline: Optional[str] = None, description: Optional[str] = None, reference_url: Optional[str] = None) -> Dict[str, Any]:
+        """Index a single document file into vector storage."""
+        try:
+            self._ensure_table_exists()
+            loader = DocumentLoader(settings.documents_dir)
+            documents = loader.load_document(file_name)
+            if not documents:
+                return {"success": False, "message": f"Could not load document {file_name}", "chunks": 0}
+            
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=settings.chunk_size,
+                chunk_overlap=settings.chunk_overlap,
+                length_function=len,
+                separators=["\n\n", "\n", " ", ""]
+            )
+            chunks = text_splitter.split_documents(documents)
+            if not chunks:
+                return {"success": False, "message": f"No chunks created from {file_name}", "chunks": 0}
+            
+            for i, chunk in enumerate(chunks):
+                chunk.metadata.update({
+                    "file_name": file_name,
+                    "source": file_name,
+                    "airline": airline or "",
+                    "description": description or "",
+                    "reference_url": reference_url or "",
+                    "chunk_index": i,
+                    "total_chunks": len(chunks)
+                })
+            
+            self.vector_store.add_documents(chunks)
+            self._create_vector_index()
+            return {
+                "success": True,
+                "message": f"Successfully indexed {len(chunks)} chunks from {file_name}",
+                "chunks": len(chunks)
+            }
+        except Exception as e:
+            logger.error(f"Failed to index single document {file_name}: {e}")
+            return {"success": False, "message": str(e), "chunks": 0}
+
     
     def get_vector_store_stats(self) -> Dict[str, Any]:
         """Get statistics about the vector store including unique airlines and document counts."""

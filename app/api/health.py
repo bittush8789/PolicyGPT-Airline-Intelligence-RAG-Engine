@@ -41,28 +41,36 @@ async def check_state_db() -> str:
         return "error"
 
 
-async def check_openai_api() -> str:
-    """Check OpenAI API availability."""
+async def check_groq_api() -> str:
+    """Check Groq API availability."""
     try:
-        from langchain_openai import OpenAIEmbeddings
+        if not settings.groq_api_key or settings.groq_api_key.startswith("gsk_your"):
+            return "not_configured"
+            
+        from langchain_groq import ChatGroq
         
-        # Test with a simple embedding
-        embeddings = OpenAIEmbeddings(
-            model=settings.embedding_model,
-            openai_api_key=settings.openai_api_key
+        # Test with a simple lightweight query
+        llm = ChatGroq(
+            model=settings.llm_model,
+            groq_api_key=settings.groq_api_key,
+            temperature=0,
+            max_tokens=5
         )
         
-        # Try to embed a simple test string
-        test_embedding = embeddings.embed_query("test")
-        
-        if test_embedding and len(test_embedding) > 0:
+        response = llm.invoke("Hi")
+        if response and response.content:
             return "available"
         else:
             return "error"
             
     except Exception as e:
-        logger.error(f"OpenAI API check failed: {e}")
+        logger.error(f"Groq API check failed: {e}")
         return "unavailable"
+
+
+# Legacy alias
+async def check_openai_api() -> str:
+    return await check_groq_api()
 
 
 @router.get("/health")
@@ -73,7 +81,7 @@ async def health_check(
     Perform health check of the application.
     
     By default, returns a simple {"status": "healthy"} response without checking external services.
-    Use ?services=true to check vector database, state database, and OpenAI API.
+    Use ?services=true to check vector database, state database, and Groq API.
     
     Args:
         services: If true, perform checks on all external services
@@ -93,18 +101,21 @@ async def health_check(
         # Check all components
         vector_db_status = await check_vector_db()
         state_db_status = await check_state_db()
-        openai_status = await check_openai_api()
+        groq_status = await check_groq_api()
         
         # Determine overall status
         overall_status = "healthy"
-        if vector_db_status == "error" or state_db_status == "error" or openai_status == "unavailable":
+        if vector_db_status == "error" or state_db_status == "error":
             overall_status = "unhealthy"
+        elif groq_status == "unavailable":
+            overall_status = "degraded"
         
         response = HealthResponse(
             status=overall_status,
             vector_db=vector_db_status,
             state_db=state_db_status,
-            openai_api=openai_status
+            groq_api=groq_status,
+            openai_api=groq_status
         )
         
         logger.info(f"Health check completed: {overall_status}")
@@ -118,6 +129,7 @@ async def health_check(
             status="error",
             vector_db="unknown",
             state_db="unknown",
+            groq_api="unknown",
             openai_api="unknown"
         )
 
@@ -168,16 +180,16 @@ async def check_state_database() -> Dict[str, Any]:
         }
 
 
-@router.get("/health/openai")
-async def check_openai() -> Dict[str, Any]:
+@router.get("/health/groq")
+async def check_groq() -> Dict[str, Any]:
     """
-    Check OpenAI API connectivity and status.
+    Check Groq API connectivity and status.
     
     Returns:
-        Dictionary with OpenAI API status information
+        Dictionary with Groq API status information
     """
     try:
-        status = await check_openai_api()
+        status = await check_groq_api()
         
         result = {
             "status": status,
@@ -186,15 +198,21 @@ async def check_openai() -> Dict[str, Any]:
             "timestamp": datetime.utcnow().isoformat()
         }
         
-        logger.info("OpenAI API check completed")
+        logger.info("Groq API check completed")
         return result
         
     except Exception as e:
-        logger.error(f"OpenAI API check failed: {e}")
+        logger.error(f"Groq API check failed: {e}")
         return {
             "status": "error",
             "message": str(e)
         }
+
+
+@router.get("/health/openai")
+async def check_openai() -> Dict[str, Any]:
+    """Legacy alias for check_groq."""
+    return await check_groq()
 
 
 @router.get("/health/detailed")
@@ -211,7 +229,7 @@ async def detailed_health_check() -> Dict[str, Any]:
         # Check all components
         vector_db_status = await check_vector_db()
         state_db_status = await check_state_db()
-        openai_status = await check_openai_api()
+        groq_status = await check_groq_api()
         
         # Get detailed stats
         rag_pipeline = get_rag_pipeline()
@@ -222,8 +240,10 @@ async def detailed_health_check() -> Dict[str, Any]:
         
         # Determine overall status
         overall_status = "healthy"
-        if vector_db_status == "error" or state_db_status == "error" or openai_status == "unavailable":
+        if vector_db_status == "error" or state_db_status == "error":
             overall_status = "unhealthy"
+        elif groq_status == "unavailable":
+            overall_status = "degraded"
         
         result = {
             "overall_status": overall_status,
@@ -237,8 +257,8 @@ async def detailed_health_check() -> Dict[str, Any]:
                     "status": state_db_status,
                     "details": memory_stats
                 },
-                "openai_api": {
-                    "status": openai_status,
+                "groq_api": {
+                    "status": groq_status,
                     "model": settings.llm_model,
                     "embedding_model": settings.embedding_model
                 }

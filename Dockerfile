@@ -5,6 +5,7 @@ FROM python:3.11.9-slim
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libmagic-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -16,11 +17,14 @@ COPY requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and documents
 COPY app/ ./app/
+COPY documents/ ./documents/
 
-# Create non-root user for security
-RUN useradd -m appuser && chown -R appuser:appuser /app
+# Create non-root user for security and initialize cache directory for embeddings
+RUN useradd -m appuser && \
+    mkdir -p /home/appuser/.cache && \
+    chown -R appuser:appuser /app /home/appuser
 
 # Switch to non-root user
 USER appuser
