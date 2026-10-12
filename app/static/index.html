@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolicyGPT - Airline Intelligence (Groq 120B + PGVector)</title>
-    <!-- Google Fonts Inter -->
+    <title>PolicyGPT - Airline Intelligence</title>
+    <!-- Google Fonts Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Marked.js for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <style>
         :root {
             --bg-main: #212121;
             --bg-sidebar: #171717;
-            --bg-card: #2f2f2f;
-            --bg-card-hover: #383838;
+            --bg-card: #282828;
+            --bg-card-hover: #333333;
             --bg-input: #2f2f2f;
+            --user-bubble: #2f2f2f;
             --text-main: #ececec;
             --text-muted: #b4b4b4;
-            --text-subtle: #737373;
-            --border-subtle: #383838;
-            --border-strong: #4f4f4f;
-            --accent-primary: #10a37f;
+            --text-subtle: #71717a;
+            --border: #383838;
+            --border-subtle: #2e2e2e;
+            --accent: #10a37f;
             --accent-hover: #1a7f64;
-            --accent-blue: #0284c7;
-            --user-bubble: #2f2f2f;
-            --bot-bubble: transparent;
+            --accent-blue: #38bdf8;
             --danger: #ef4444;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            --sidebar-width: 270px;
+            --sidebar-width: 260px;
         }
 
         [data-theme="light"] {
@@ -39,16 +38,15 @@
             --bg-card: #f4f4f5;
             --bg-card-hover: #e4e4e7;
             --bg-input: #f4f4f5;
+            --user-bubble: #f4f4f5;
             --text-main: #18181b;
             --text-muted: #52525b;
             --text-subtle: #a1a1aa;
-            --border-subtle: #e4e4e7;
-            --border-strong: #d4d4d8;
-            --accent-primary: #10a37f;
+            --border: #e4e4e7;
+            --border-subtle: #f0f0f2;
+            --accent: #10a37f;
             --accent-hover: #0e8568;
             --accent-blue: #0284c7;
-            --user-bubble: #f4f4f5;
-            --bot-bubble: transparent;
             --danger: #dc2626;
         }
 
@@ -76,7 +74,7 @@
             position: relative;
         }
 
-        /* Sidebar */
+        /* Clean Sidebar */
         #sidebar {
             width: var(--sidebar-width);
             background-color: var(--bg-sidebar);
@@ -84,7 +82,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 40;
             flex-shrink: 0;
         }
@@ -99,100 +97,83 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--border-subtle);
         }
 
-        .logo-wrap {
+        .brand-link {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 700;
-            font-size: 1.05rem;
+            font-weight: 600;
+            font-size: 0.98rem;
             color: var(--text-main);
+            text-decoration: none;
+            cursor: pointer;
         }
 
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #10a37f 0%, #0284c7 100%);
+        .brand-logo {
+            width: 28px;
+            height: 28px;
             border-radius: 8px;
+            background: linear-gradient(135deg, #10a37f 0%, #0284c7 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             color: white;
-            box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
         }
 
         .btn-new-chat {
-            margin: 12px 14px 8px 14px;
-            padding: 10px 14px;
-            background-color: transparent;
-            border: 1px solid var(--border-subtle);
+            margin: 8px 12px;
+            padding: 9px 12px;
+            background: transparent;
+            border: 1px solid var(--border);
             color: var(--text-main);
-            border-radius: 10px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .btn-new-chat:hover {
             background-color: var(--bg-card);
-            border-color: var(--border-strong);
+            border-color: var(--text-subtle);
         }
 
-        .airline-filter-box {
-            padding: 8px 14px;
-        }
-
-        .filter-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-subtle);
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        .airline-filter-container {
+            padding: 8px 12px;
         }
 
         .airline-select {
             width: 100%;
-            padding: 9px 12px;
+            padding: 8px 10px;
             background-color: var(--bg-card);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid var(--border);
             color: var(--text-main);
             border-radius: 8px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             outline: none;
             cursor: pointer;
-            transition: border-color 0.2s;
         }
 
-        .airline-select:focus {
-            border-color: var(--accent-primary);
-        }
-
-        /* Conversation History */
+        /* History */
         .history-section {
             flex: 1;
             overflow-y: auto;
-            padding: 10px 12px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
-        .history-title {
-            font-size: 0.75rem;
+        .history-heading {
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--text-subtle);
-            padding: 8px 8px 4px 8px;
+            padding: 10px 8px 4px 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -201,127 +182,74 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 9px 10px;
-            border-radius: 8px;
-            color: var(--text-muted);
-            font-size: 0.86rem;
+            padding: 8px 10px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.15s ease;
-            position: relative;
-            text-decoration: none;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            transition: all 0.15s;
         }
 
-        .history-item:hover {
+        .history-item:hover, .history-item.active {
             background-color: var(--bg-card);
             color: var(--text-main);
         }
 
-        .history-item.active {
-            background-color: var(--bg-card);
-            color: var(--text-main);
-            font-weight: 500;
-        }
-
-        .history-item-text {
+        .history-text {
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: 1;
+            max-width: 180px;
         }
 
-        .history-actions {
+        .history-del {
             display: none;
-            gap: 6px;
-        }
-
-        .history-item:hover .history-actions {
-            display: flex;
-        }
-
-        .action-icon-btn {
             background: none;
             border: none;
             color: var(--text-subtle);
             cursor: pointer;
             padding: 2px 4px;
-            border-radius: 4px;
-            font-size: 0.8rem;
         }
 
-        .action-icon-btn:hover {
-            color: var(--text-main);
+        .history-item:hover .history-del {
+            display: block;
+        }
+
+        .history-del:hover {
+            color: var(--danger);
         }
 
         /* Sidebar Footer */
         .sidebar-footer {
-            padding: 12px 14px;
+            padding: 10px 12px;
             border-top: 1px solid var(--border-subtle);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 2px;
         }
 
-        .footer-action-btn {
+        .sidebar-btn {
+            width: 100%;
             display: flex;
             align-items: center;
             gap: 10px;
-            width: 100%;
             padding: 8px 10px;
             background: transparent;
             border: none;
+            border-radius: 6px;
             color: var(--text-muted);
-            border-radius: 8px;
-            font-size: 0.86rem;
-            font-weight: 500;
+            font-size: 0.82rem;
             cursor: pointer;
             text-align: left;
-            transition: all 0.15s ease;
+            transition: all 0.15s;
         }
 
-        .footer-action-btn:hover {
+        .sidebar-btn:hover {
             background-color: var(--bg-card);
             color: var(--text-main);
         }
 
-        .status-badge-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 4px;
-        }
-
-        .status-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: var(--text-subtle);
-        }
-
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            color: #4ade80;
-            font-weight: 600;
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: #4ade80;
-            box-shadow: 0 0 6px #4ade80;
-        }
-
-        /* Main Chat View */
+        /* Main View */
         #main-view {
             flex: 1;
             display: flex;
@@ -329,102 +257,104 @@
             height: 100%;
             position: relative;
             background-color: var(--bg-main);
-            overflow: hidden;
         }
 
-        /* Top Bar */
-        .top-navbar {
+        /* Clean Minimal Top Navbar */
+        .navbar {
             height: 52px;
             padding: 0 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--border-subtle);
             background-color: var(--bg-main);
+            border-bottom: 1px solid var(--border-subtle);
             z-index: 10;
         }
 
-        .nav-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .icon-btn {
-            background: transparent;
-            border: 1px solid var(--border-subtle);
-            color: var(--text-muted);
-            border-radius: 8px;
-            width: 34px;
-            height: 34px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .icon-btn:hover {
-            background-color: var(--bg-card);
-            color: var(--text-main);
-        }
-
-        .model-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .model-sparkle {
-            color: #eab308;
-        }
-
-        .nav-right {
+        .nav-left, .nav-right {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .active-filter-pill {
-            font-size: 0.8rem;
-            padding: 5px 12px;
-            border-radius: 20px;
-            background-color: rgba(2, 132, 199, 0.15);
-            color: #38bdf8;
-            border: 1px solid rgba(2, 132, 199, 0.3);
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-icon:hover {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+        }
+
+        .model-selector {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 6px;
-            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
 
-        /* Messages Container */
+        .model-tag {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-subtle);
+            background: var(--bg-card);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .nav-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 4px 10px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .nav-pill:hover {
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+
+        /* Chat Messages Container */
         #messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 20px 140px 20px;
+            padding: 20px 20px 140px 20px;
             scroll-behavior: smooth;
         }
 
-        .chat-scroll-wrapper {
-            max-width: 800px;
+        .chat-wrapper {
+            max-width: 760px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
         }
 
-        /* Zero State / Welcome */
+        /* Clean Centered Welcome Screen */
         #welcome-view {
-            max-width: 760px;
-            margin: 60px auto 20px auto;
+            max-width: 680px;
+            margin: 100px auto 20px auto;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -432,38 +362,18 @@
             gap: 24px;
         }
 
-        .welcome-hero-icon {
-            width: 68px;
-            height: 68px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #10a37f 0%, #0284c7 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            color: white;
-            box-shadow: 0 10px 30px rgba(16, 163, 127, 0.25);
-        }
-
         .welcome-title {
-            font-size: 1.85rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .welcome-subtitle {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            max-width: 500px;
-            line-height: 1.5;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: var(--text-main);
         }
 
         .prompt-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            margin-top: 10px;
         }
 
         @media (max-width: 640px) {
@@ -476,34 +386,25 @@
             background-color: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px 16px;
             text-align: left;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.15s ease;
+            font-size: 0.86rem;
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .prompt-card:hover {
             background-color: var(--bg-card-hover);
-            border-color: var(--border-strong);
-            transform: translateY(-2px);
+            border-color: var(--border);
         }
 
-        .prompt-card-header {
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .prompt-card-body {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            line-height: 1.4;
+        .prompt-card-sub {
+            font-size: 0.78rem;
+            color: var(--text-subtle);
         }
 
         /* Message Bubbles */
@@ -511,7 +412,6 @@
             display: flex;
             gap: 14px;
             align-items: flex-start;
-            position: relative;
         }
 
         .message-row.user {
@@ -519,142 +419,121 @@
         }
 
         .message-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.95rem;
+            font-size: 0.8rem;
+            font-weight: 600;
             flex-shrink: 0;
             margin-top: 2px;
         }
 
         .avatar-user {
-            background-color: #4b5563;
-            color: white;
+            display: none; /* Clean ChatGPT style: no user avatar */
         }
 
         .avatar-bot {
             background: linear-gradient(135deg, #10a37f 0%, #0284c7 100%);
             color: white;
-            box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
         }
 
-        .message-body-wrapper {
+        .message-body {
             max-width: 85%;
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
 
-        .user .message-body-wrapper {
+        .user .message-body {
+            max-width: 75%;
             align-items: flex-end;
         }
 
-        .message-content {
-            padding: 12px 18px;
-            border-radius: 18px;
+        .message-text {
             line-height: 1.6;
-            font-size: 0.95rem;
+            font-size: 0.94rem;
             word-break: break-word;
         }
 
-        .user .message-content {
+        .user .message-text {
             background-color: var(--user-bubble);
             color: var(--text-main);
-            border-top-right-radius: 4px;
+            padding: 10px 16px;
+            border-radius: 18px;
         }
 
-        .assistant .message-content {
-            background-color: transparent;
+        .assistant .message-text {
+            background: transparent;
             color: var(--text-main);
             padding: 0;
         }
 
-        /* Markdown Styles in Assistant Messages */
-        .assistant .message-content p {
+        /* Markdown in Assistant Messages */
+        .assistant .message-text p {
             margin-bottom: 12px;
         }
 
-        .assistant .message-content p:last-child {
+        .assistant .message-text p:last-child {
             margin-bottom: 0;
         }
 
-        .assistant .message-content h1,
-        .assistant .message-content h2,
-        .assistant .message-content h3,
-        .assistant .message-content h4 {
-            margin: 16px 0 8px 0;
-            color: var(--text-main);
+        .assistant .message-text h1,
+        .assistant .message-text h2,
+        .assistant .message-text h3 {
+            margin: 14px 0 6px 0;
             font-weight: 600;
+            color: var(--text-main);
         }
 
-        .assistant .message-content ul,
-        .assistant .message-content ol {
-            margin: 8px 0 12px 20px;
+        .assistant .message-text ul,
+        .assistant .message-text ol {
+            margin: 6px 0 10px 20px;
         }
 
-        .assistant .message-content li {
-            margin-bottom: 4px;
+        .assistant .message-text li {
+            margin-bottom: 3px;
         }
 
-        .assistant .message-content table {
+        .assistant .message-text table {
             border-collapse: collapse;
             width: 100%;
-            margin: 14px 0;
-            font-size: 0.88rem;
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
             overflow: hidden;
         }
 
-        .assistant .message-content th,
-        .assistant .message-content td {
-            border: 1px solid var(--border-subtle);
-            padding: 8px 12px;
+        .assistant .message-text th,
+        .assistant .message-text td {
+            border: 1px solid var(--border);
+            padding: 7px 10px;
             text-align: left;
         }
 
-        .assistant .message-content th {
+        .assistant .message-text th {
             background-color: var(--bg-card);
             font-weight: 600;
         }
 
-        .assistant .message-content tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        .assistant .message-content code {
+        .assistant .message-text code {
             font-family: var(--font-mono);
             background-color: var(--bg-card);
-            padding: 2px 6px;
+            padding: 2px 5px;
             border-radius: 4px;
-            font-size: 0.86rem;
-            color: #38bdf8;
+            font-size: 0.85rem;
+            color: var(--accent-blue);
         }
 
-        .assistant .message-content pre {
-            background-color: #111;
-            padding: 12px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 12px 0;
-            border: 1px solid var(--border-subtle);
-        }
-
-        .assistant .message-content pre code {
-            background: none;
-            padding: 0;
-            color: #e5e7eb;
-        }
-
-        /* Streaming Cursor */
-        .cursor-blink {
+        /* Typing Blink Cursor */
+        .typing-cursor {
             display: inline-block;
-            width: 8px;
-            height: 16px;
-            background-color: var(--accent-primary);
+            width: 7px;
+            height: 15px;
+            background-color: var(--accent);
             margin-left: 2px;
             vertical-align: middle;
             animation: blink 0.8s infinite;
@@ -665,157 +544,145 @@
             51%, 100% { opacity: 0; }
         }
 
-        /* Sources Accordion */
-        .sources-accordion {
-            margin-top: 12px;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            overflow: hidden;
-            font-size: 0.84rem;
-        }
-
-        .sources-header {
-            padding: 9px 14px;
+        /* Discreet Footer / Meta Bar Under Assistant Message */
+        .message-footer {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--text-muted);
-            user-select: none;
-            transition: background-color 0.15s;
-        }
-
-        .sources-header:hover {
-            background-color: var(--bg-card-hover);
-            color: var(--text-main);
-        }
-
-        .sources-content {
-            display: none;
-            padding: 10px 14px;
-            border-top: 1px solid var(--border-subtle);
-            background-color: rgba(0, 0, 0, 0.15);
-            display: flex;
-            flex-direction: column;
             gap: 10px;
-        }
-
-        .sources-content.hidden {
-            display: none !important;
-        }
-
-        .source-card {
-            background-color: var(--bg-sidebar);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 10px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .source-meta-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            margin-top: 6px;
             font-size: 0.78rem;
         }
 
-        .source-file-badge {
-            color: #38bdf8;
-            font-weight: 600;
-            display: flex;
+        .meta-chip {
+            display: inline-flex;
             align-items: center;
             gap: 5px;
-        }
-
-        .source-airline-tag {
-            background-color: rgba(16, 163, 127, 0.2);
-            color: #34d399;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.72rem;
-            font-weight: 500;
-        }
-
-        .source-snippet {
-            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background-color: var(--bg-card);
             color: var(--text-muted);
-            line-height: 1.4;
-            max-height: 80px;
-            overflow-y: auto;
-            white-space: pre-wrap;
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
         }
 
-        /* Message Actions */
-        .message-actions-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 6px;
+        .meta-chip:hover {
+            color: var(--text-main);
+            border-color: var(--border);
         }
 
-        .msg-action-btn {
+        .meta-chip.score-green {
+            color: #34d399;
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .meta-chip.score-amber {
+            color: #fbbf24;
+            background-color: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .action-icon {
             background: transparent;
             border: none;
             color: var(--text-subtle);
-            font-size: 0.78rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 6px;
             transition: all 0.15s;
         }
 
-        .msg-action-btn:hover {
+        .action-icon:hover {
+            color: var(--text-main);
             background-color: var(--bg-card);
+        }
+
+        /* Sources Drawer */
+        .sources-drawer {
+            margin-top: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .sources-drawer.open {
+            display: block;
+        }
+
+        .source-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.78rem;
+        }
+
+        .source-item:last-child {
+            border-bottom: none;
+        }
+
+        .source-title {
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 2px;
+        }
+
+        .source-text {
+            color: var(--text-muted);
+            line-height: 1.4;
+            max-height: 70px;
+            overflow-y: auto;
+        }
+
+        /* Safety Card for Guardrail Blocks */
+        .guard-block-card {
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.86rem;
             color: var(--text-main);
         }
 
-        .msg-action-btn.active {
-            color: var(--accent-primary);
-        }
-
-        /* Floating Input Bar */
-        .chat-input-wrapper {
+        /* Clean Input Region (Fixed Bottom) */
+        .input-bar-region {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: linear-gradient(180deg, transparent 0%, var(--bg-main) 30%);
-            padding: 16px 20px 20px 20px;
+            background: linear-gradient(180deg, transparent 0%, var(--bg-main) 35%);
+            padding: 16px 20px 14px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 20;
         }
 
-        .input-capsule {
+        .input-pill-box {
             width: 100%;
-            max-width: 800px;
+            max-width: 760px;
             background-color: var(--bg-input);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid var(--border);
             border-radius: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            padding: 8px 12px 8px 16px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .input-capsule:focus-within {
-            border-color: var(--border-strong);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-        }
-
-        .input-upper-row {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: flex-end;
+            padding: 8px 10px 8px 16px;
             gap: 10px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .input-pill-box:focus-within {
+            border-color: var(--text-subtle);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         }
 
         #chat-textarea {
@@ -825,10 +692,10 @@
             outline: none;
             color: var(--text-main);
             font-family: var(--font-sans);
-            font-size: 0.96rem;
+            font-size: 0.94rem;
             line-height: 1.5;
             resize: none;
-            max-height: 180px;
+            max-height: 160px;
             min-height: 24px;
             padding: 4px 0;
         }
@@ -837,24 +704,9 @@
             color: var(--text-subtle);
         }
 
-        .input-buttons-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-top: 4px;
-        }
-
-        .input-tag {
-            font-size: 0.74rem;
-            color: var(--text-subtle);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
         .btn-send {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             border: none;
             background-color: var(--text-main);
@@ -863,33 +715,30 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s;
+            transition: opacity 0.15s, transform 0.1s;
             flex-shrink: 0;
         }
 
         .btn-send:disabled {
-            opacity: 0.25;
+            opacity: 0.2;
             cursor: not-allowed;
         }
 
-        .btn-send:not(:disabled):hover {
-            transform: scale(1.05);
+        .btn-send.stop-mode {
+            background-color: var(--danger);
+            color: white;
+            opacity: 1;
         }
 
-        .btn-stop {
-            background-color: #ef4444 !important;
-            color: white !important;
-        }
-
-        .disclaimer-text {
+        .input-disclaimer {
             font-size: 0.72rem;
             color: var(--text-subtle);
             margin-top: 8px;
             text-align: center;
         }
 
-        /* Modal */
-        .modal-overlay {
+        /* Clean Modal */
+        .modal-mask {
             position: fixed;
             top: 0;
             left: 0;
@@ -903,104 +752,153 @@
             z-index: 100;
         }
 
-        .modal-overlay.open {
+        .modal-mask.open {
             display: flex;
         }
 
-        .modal-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
+        .modal-window {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             width: 90%;
-            max-width: 520px;
-            padding: 24px;
+            max-width: 620px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
 
-        .modal-header {
+        .modal-window.wide {
+            max-width: 760px;
+        }
+
+        .modal-top {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .modal-title {
-            font-size: 1.15rem;
-            font-weight: 700;
+        .modal-heading {
+            font-size: 0.98rem;
+            font-weight: 600;
+            color: var(--text-main);
         }
 
-        .dropzone {
-            border: 2px dashed var(--border-strong);
-            border-radius: 12px;
-            padding: 30px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
+        .modal-content {
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 8px;
+            gap: 14px;
         }
 
-        .dropzone:hover, .dropzone.dragover {
-            border-color: var(--accent-primary);
-            background-color: rgba(16, 163, 127, 0.05);
+        /* Clean Dashboard Tabs */
+        .tab-row {
+            display: flex;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 18px;
+            gap: 6px;
         }
 
-        .modal-input {
-            width: 100%;
-            padding: 10px 14px;
-            background-color: var(--bg-sidebar);
+        .tab-btn {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-subtle);
+            padding: 10px 12px;
+            font-size: 0.84rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            color: var(--text-main);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .metric-cards-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        @media (max-width: 640px) {
+            .metric-cards-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .metric-card {
+            background-color: var(--bg-card);
             border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metric-card-label {
+            font-size: 0.72rem;
+            color: var(--text-subtle);
+            font-weight: 500;
+        }
+
+        .metric-card-val {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text-main);
-            font-size: 0.88rem;
+            padding: 8px 12px;
+            font-size: 0.86rem;
             outline: none;
         }
 
-        .modal-input:focus {
-            border-color: var(--accent-primary);
-        }
-
-        .btn-submit-modal {
-            padding: 11px 18px;
-            background: linear-gradient(135deg, #10a37f 0%, #0284c7 100%);
+        .btn-action {
+            background-color: var(--accent);
+            color: white;
             border: none;
             border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            font-size: 0.92rem;
+            padding: 8px 14px;
+            font-size: 0.84rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: opacity 0.15s;
         }
 
-        .btn-submit-modal:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
+        .btn-action:hover {
+            opacity: 0.9;
         }
 
-        /* Toast notification */
+        /* Toast */
         #toast {
             position: fixed;
-            bottom: 90px;
+            bottom: 24px;
             left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background-color: #18181b;
-            color: #ffffff;
-            border: 1px solid var(--border-subtle);
-            padding: 10px 20px;
+            transform: translateX(-50%) translateY(40px);
+            background-color: #10b981;
+            color: white;
+            padding: 7px 16px;
             border-radius: 20px;
-            font-size: 0.85rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-size: 0.82rem;
+            font-weight: 500;
             opacity: 0;
-            pointer-events: none;
             transition: all 0.25s ease;
             z-index: 200;
+            pointer-events: none;
         }
 
-        #toast.show {
+        #toast.active {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
@@ -1011,198 +909,255 @@
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header">
-                <div class="logo-wrap">
-                    <div class="logo-icon">✈️</div>
+                <div class="brand-link" id="brand-new-chat">
+                    <div class="brand-logo">✈️</div>
                     <span>PolicyGPT</span>
                 </div>
-                <button class="icon-btn" id="btn-toggle-sidebar" title="Toggle Sidebar">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <button class="btn-icon" id="btn-toggle-sidebar" title="Toggle Sidebar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
 
             <button class="btn-new-chat" id="btn-new-chat">
-                <span style="display:flex;align-items:center;gap:8px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                <span style="display:flex;align-items:center;gap:6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                     New Chat
                 </span>
-                <span style="font-size:0.75rem;color:var(--text-subtle);">Ctrl+K</span>
+                <span style="font-size:0.72rem;color:var(--text-subtle);">Ctrl+K</span>
             </button>
 
-            <!-- Airline Filter Selector -->
-            <div class="airline-filter-box">
-                <div class="filter-label">
-                    <span>Target Airline Filter</span>
-                    <span id="airline-count-badge" style="color:var(--accent-primary);">10 Airlines</span>
-                </div>
+            <!-- Compact Airline Selector -->
+            <div class="airline-filter-container">
                 <select id="airline-select" class="airline-select">
-                    <option value="">🌐 All Airlines (Search Everything)</option>
-                    <!-- Populated dynamically via /api/airlines -->
+                    <option value="">All Airlines (Default)</option>
+                    <!-- Populated dynamically -->
                 </select>
             </div>
 
-            <!-- Conversation History List -->
+            <!-- History List -->
             <div class="history-section">
-                <div class="history-title">Recent Chats</div>
-                <div id="history-list">
-                    <!-- Populated via localStorage & backend -->
-                </div>
+                <div class="history-heading">Recent Chats</div>
+                <div id="history-list"></div>
             </div>
 
-            <!-- Sidebar Footer -->
+            <!-- Footer Tools -->
             <div class="sidebar-footer">
-                <button class="footer-action-btn" id="btn-open-upload">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                    Upload Policy Document
+                <button class="sidebar-btn" id="btn-open-dashboard">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    Evaluations & Safety
                 </button>
-                <button class="footer-action-btn" id="btn-export-chat">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                    Export Conversation
+                <button class="sidebar-btn" id="btn-open-upload">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    Upload Policy Doc
                 </button>
-                <button class="footer-action-btn" id="btn-toggle-theme">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                    <span id="theme-label">Switch to Light Theme</span>
+                <button class="sidebar-btn" id="btn-toggle-theme">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <span id="theme-btn-label">Toggle Theme</span>
                 </button>
-                <button class="footer-action-btn" id="btn-clear-all" style="color:var(--danger);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    Clear All Chats
+                <button class="sidebar-btn" id="btn-clear-chats" style="color:var(--text-subtle);">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Clear History
                 </button>
-
-                <div class="status-badge-card">
-                    <div class="status-row">
-                        <span>Model:</span>
-                        <span style="color:var(--text-main);font-weight:600;">Groq 120B</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Vector DB:</span>
-                        <span class="status-pill"><span class="status-dot"></span> PGVector</span>
-                    </div>
-                </div>
             </div>
         </aside>
 
         <!-- Main View -->
         <main id="main-view">
-            <!-- Top Bar -->
-            <header class="top-navbar">
+            <!-- Top Navbar (Ultra Clean) -->
+            <header class="navbar">
                 <div class="nav-left">
-                    <button class="icon-btn" id="btn-open-sidebar" title="Open Sidebar">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    <button class="btn-icon" id="btn-open-sidebar" title="Open Sidebar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
                     </button>
-                    <div class="model-badge">
-                        <span class="model-sparkle">⚡</span>
-                        <span>openai/gpt-oss-120b</span>
+                    <div class="model-selector">
+                        <span>PolicyGPT</span>
+                        <span class="model-tag">Groq 120B</span>
                     </div>
                 </div>
                 <div class="nav-right">
-                    <div class="active-filter-pill" id="active-filter-indicator">
-                        <span>🌐 All Airlines</span>
-                    </div>
+                    <button class="nav-pill" id="btn-nav-dashboard" title="View Safety & Quality Evaluation Details">
+                        <span>🛡️ Guardrails Active</span>
+                    </button>
+                    <button class="btn-icon" id="btn-nav-new" title="New Chat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
                 </div>
             </header>
 
-            <!-- Messages Stream -->
+            <!-- Chat Scroll Area -->
             <div id="messages-container">
-                <div class="chat-scroll-wrapper" id="chat-wrapper">
-                    <!-- Zero State Welcome screen shown when chat has no messages -->
+                <div class="chat-wrapper" id="chat-wrapper">
+                    <!-- Clean Welcome View -->
                     <div id="welcome-view">
-                        <div class="welcome-hero-icon">✈️</div>
-                        <div>
-                            <h2 class="welcome-title">What airline policy can I help you with?</h2>
-                            <p class="welcome-subtitle">Ask questions about baggage limits, cancellation fees, pet policies, or international refunds across 10 major airlines.</p>
-                        </div>
+                        <h1 class="welcome-title">Where can I help with airline policies?</h1>
                         <div class="prompt-grid">
-                            <div class="prompt-card" data-prompt="What are Delta's checked & carry-on baggage size, weight limits, and fees?" data-airline="Delta Airlines">
-                                <div class="prompt-card-header">
-                                    <span>🧳 Delta Baggage Allowance</span>
-                                </div>
-                                <div class="prompt-card-body">Weight limits, carry-on dimensions, and overweight luggage rules.</div>
+                            <div class="prompt-card" data-prompt="What is the carry-on baggage allowance for United Airlines?">
+                                <div>🧳 United Carry-On Allowance</div>
+                                <div class="prompt-card-sub">Size dimensions, personal items, rules</div>
                             </div>
-                            <div class="prompt-card" data-prompt="What is United Airlines' 24-hour cancellation and refund policy?" data-airline="United Airlines">
-                                <div class="prompt-card-header">
-                                    <span>🔄 United Cancellation & Refunds</span>
-                                </div>
-                                <div class="prompt-card-body">Full refund eligibility within 24 hours of flight booking.</div>
+                            <div class="prompt-card" data-prompt="What is Delta Airlines' 24-hour cancellation and refund policy?">
+                                <div>🔄 Delta 24-Hour Refund Policy</div>
+                                <div class="prompt-card-sub">Full refund window and exceptions</div>
                             </div>
-                            <div class="prompt-card" data-prompt="Can I bring a pet in-cabin on Air Canada flights, and what are the fees and restrictions?" data-airline="Air Canada">
-                                <div class="prompt-card-header">
-                                    <span>🐕 Air Canada Pet Travel Policy</span>
-                                </div>
-                                <div class="prompt-card-body">In-cabin pet carrier dimensions, fees, and breed restrictions.</div>
+                            <div class="prompt-card" data-prompt="What are the pet travel policies and fees for flying in cabin?">
+                                <div>🐾 Pet in Cabin Guidelines</div>
+                                <div class="prompt-card-sub">Carrier rules, weight limits, and fees</div>
                             </div>
-                            <div class="prompt-card" data-prompt="Compare baggage fees between American Airlines and Southwest Airlines." data-airline="">
-                                <div class="prompt-card-header">
-                                    <span>⚖️ Compare American vs Southwest</span>
-                                </div>
-                                <div class="prompt-card-body">Comparison of checked bags policy and fee differences.</div>
+                            <div class="prompt-card" data-prompt="What compensation is an airline required to provide for delayed flights?">
+                                <div>⏱️ Flight Delay Compensation</div>
+                                <div class="prompt-card-sub">Rebooking, meal vouchers, and delays</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sticky Floating Input Area -->
-            <div class="chat-input-wrapper">
-                <div class="input-capsule">
-                    <div class="input-upper-row">
-                        <textarea id="chat-textarea" placeholder="Ask anything about airline policies..." rows="1"></textarea>
-                        <button class="btn-send" id="btn-send" title="Send message" disabled>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                        </button>
-                    </div>
-                    <div class="input-buttons-row">
-                        <div class="input-tag" id="input-airline-tag">
-                            <span>Target: All Airlines</span>
-                        </div>
-                        <div style="font-size:0.72rem;color:var(--text-subtle);">
-                            Shift+Enter for new line
-                        </div>
-                    </div>
+            <!-- Input Bar (Fixed Bottom) -->
+            <div class="input-bar-region">
+                <div class="input-pill-box">
+                    <textarea id="chat-textarea" rows="1" placeholder="Message PolicyGPT..."></textarea>
+                    <button class="btn-send" id="btn-send" disabled title="Send">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                    </button>
                 </div>
-                <div class="disclaimer-text">
-                    PolicyGPT provides guidance from official carrier contracts. Always verify mission-critical itineraries with the airline.
+                <div class="input-disclaimer">
+                    PolicyGPT searches official contracts of carriage. Confirm key travel requirements with your airline.
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Upload Document Modal -->
-    <div class="modal-overlay" id="upload-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 class="modal-title">Upload Airline Policy Document</h3>
-                <button class="icon-btn" id="btn-close-modal">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    <!-- Evaluations & Safety Dashboard Modal -->
+    <div class="modal-mask" id="dashboard-modal">
+        <div class="modal-window wide">
+            <div class="modal-top">
+                <div class="modal-heading">Evaluations & Safety Dashboard</div>
+                <button class="btn-icon" id="btn-close-dash">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
 
-            <div class="dropzone" id="modal-dropzone">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--accent-primary);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                <div style="font-weight:600;font-size:0.95rem;">Drag & drop file here or click to browse</div>
-                <div style="font-size:0.8rem;color:var(--text-muted);">Supports PDF, TXT, HTML files</div>
-                <input type="file" id="modal-file-input" style="display:none;" accept=".pdf,.txt,.html">
-                <div id="selected-filename" style="font-size:0.85rem;color:var(--accent-blue);font-weight:600;display:none;"></div>
+            <div class="tab-row">
+                <button class="tab-btn active" data-tab="tab-stats">Overview</button>
+                <button class="tab-btn" data-tab="tab-evals">Evaluation Logs</button>
+                <button class="tab-btn" data-tab="tab-sandbox">Sandbox Tester</button>
+                <button class="tab-btn" data-tab="tab-rules">Active Rules</button>
             </div>
 
-            <div>
-                <label style="font-size:0.78rem;font-weight:600;color:var(--text-subtle);display:block;margin-bottom:6px;">Airline Name (Optional)</label>
-                <input type="text" id="modal-airline-input" class="modal-input" placeholder="e.g. Qatar Airways or Delta Airlines">
+            <div class="modal-content" id="tab-stats">
+                <div class="metric-cards-row">
+                    <div class="metric-card">
+                        <span class="metric-card-label">Overall Quality</span>
+                        <span class="metric-card-val" id="dash-overall">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-card-label">Context Relevance</span>
+                        <span class="metric-card-val" id="dash-relevance">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-card-label">Faithfulness</span>
+                        <span class="metric-card-val" id="dash-faithfulness">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-card-label">Completeness</span>
+                        <span class="metric-card-val" id="dash-completeness">--</span>
+                    </div>
+                </div>
+
+                <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;font-size:0.84rem;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">
+                    <span id="dash-telemetry">Telemetry: 0 checks processed</span>
+                    <span style="font-weight:600;color:var(--accent);" id="dash-tier">Quality Tier: High</span>
+                </div>
             </div>
 
-            <div>
-                <label style="font-size:0.78rem;font-weight:600;color:var(--text-subtle);display:block;margin-bottom:6px;">Document Description (Optional)</label>
-                <input type="text" id="modal-desc-input" class="modal-input" placeholder="e.g. 2026 International Carriage Agreement">
+            <div class="modal-content" id="tab-evals" style="display:none;">
+                <div id="dash-evals-list" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;">
+                    <!-- Logs inserted here -->
+                </div>
             </div>
 
-            <button class="btn-submit-modal" id="btn-submit-upload" disabled>Upload & Index into PGVector</button>
-            <div id="modal-upload-status" style="font-size:0.82rem;text-align:center;display:none;"></div>
+            <div class="modal-content" id="tab-sandbox" style="display:none;">
+                <textarea class="form-input" id="sandbox-input" placeholder="Type prompt to test guardrails or full LLM-as-a-judge..."></textarea>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-action" id="btn-sandbox-guard">Test Guardrails</button>
+                    <button class="btn-action" id="btn-sandbox-eval" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-main);">Test Evaluator</button>
+                </div>
+                <pre id="sandbox-output" style="background:var(--bg-card);padding:10px;border-radius:8px;font-size:0.78rem;font-family:var(--font-mono);max-height:160px;overflow-y:auto;display:none;color:var(--accent-blue);"></pre>
+            </div>
+
+            <div class="modal-content" id="tab-rules" style="display:none;font-size:0.84rem;">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="padding:10px;background:var(--bg-card);border-radius:8px;display:flex;justify-content:space-between;">
+                        <span>🛡️ Prompt Injection & Jailbreak Defense</span>
+                        <span style="color:var(--accent);font-weight:600;">Active</span>
+                    </div>
+                    <div style="padding:10px;background:var(--bg-card);border-radius:8px;display:flex;justify-content:space-between;">
+                        <span>✈️ Airline Topic Relevance Filter</span>
+                        <span style="color:var(--accent);font-weight:600;">Active</span>
+                    </div>
+                    <div style="padding:10px;background:var(--bg-card);border-radius:8px;display:flex;justify-content:space-between;">
+                        <span>🚫 Profanity & Abusive Language Filter</span>
+                        <span style="color:var(--accent);font-weight:600;">Active</span>
+                    </div>
+                    <div style="padding:10px;background:var(--bg-card);border-radius:8px;display:flex;justify-content:space-between;">
+                        <span>⏱️ Sliding-Window Rate Limiter (30/min)</span>
+                        <span style="color:var(--accent);font-weight:600;">Active</span>
+                    </div>
+                    <div style="padding:10px;background:var(--bg-card);border-radius:8px;display:flex;justify-content:space-between;">
+                        <span>🔒 Automated PII Masking (Cards, Emails)</span>
+                        <span style="color:var(--accent);font-weight:600;">Active</span>
+                    </div>
+                    <div style="padding:10px;background:var(--bg-card);border-radius:8px;display:flex;justify-content:space-between;">
+                        <span>🎯 Hallucination & Overconfidence Guard</span>
+                        <span style="color:var(--accent);font-weight:600;">Active</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast">Copied to clipboard!</div>
+    <!-- Critique Popover Modal -->
+    <div class="modal-mask" id="critique-modal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <div class="modal-heading">Evaluation Breakdown</div>
+                <button class="btn-icon" id="btn-close-critique">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-content" id="critique-content"></div>
+        </div>
+    </div>
+
+    <!-- Upload Document Modal -->
+    <div class="modal-mask" id="upload-modal">
+        <div class="modal-window">
+            <div class="modal-top">
+                <div class="modal-heading">Upload Airline Policy Document</div>
+                <button class="btn-icon" id="btn-close-upload">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div id="dropzone" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;">
+                    <div style="font-size:1.8rem;margin-bottom:4px;">📄</div>
+                    <div style="font-size:0.88rem;font-weight:500;">Select Policy Document</div>
+                    <div style="font-size:0.75rem;color:var(--text-subtle);">PDF, TXT, or HTML</div>
+                    <input type="file" id="file-input" accept=".pdf,.txt,.html" style="display:none;">
+                </div>
+                <div id="file-chosen" style="font-size:0.8rem;color:var(--accent);display:none;"></div>
+                <input type="text" id="upload-airline" class="form-input" placeholder="Airline Name (e.g. United Airlines)">
+                <input type="text" id="upload-desc" class="form-input" placeholder="Document Description (Optional)">
+                <div id="upload-status" style="font-size:0.82rem;display:none;"></div>
+                <button class="btn-action" id="btn-do-upload">Index into PGVector</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Copied to clipboard</div>
 
     <script>
-        // State Management
         const state = {
             threads: JSON.parse(localStorage.getItem('policygpt_threads') || '[]'),
             currentThreadId: localStorage.getItem('policygpt_current_thread') || null,
@@ -1213,39 +1168,46 @@
             availableAirlines: []
         };
 
-        // DOM Elements
+        // DOM elements
         const sidebar = document.getElementById('sidebar');
         const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
         const btnOpenSidebar = document.getElementById('btn-open-sidebar');
         const btnNewChat = document.getElementById('btn-new-chat');
+        const btnNavNew = document.getElementById('btn-nav-new');
+        const brandNewChat = document.getElementById('brand-new-chat');
         const historyList = document.getElementById('history-list');
         const airlineSelect = document.getElementById('airline-select');
-        const activeFilterIndicator = document.getElementById('active-filter-indicator');
-        const inputAirlineTag = document.getElementById('input-airline-tag');
         const chatTextarea = document.getElementById('chat-textarea');
         const btnSend = document.getElementById('btn-send');
-        const messagesContainer = document.getElementById('messages-container');
         const chatWrapper = document.getElementById('chat-wrapper');
         const welcomeView = document.getElementById('welcome-view');
         const btnToggleTheme = document.getElementById('btn-toggle-theme');
-        const themeLabel = document.getElementById('theme-label');
-        const btnExportChat = document.getElementById('btn-export-chat');
-        const btnClearAll = document.getElementById('btn-clear-all');
+        const themeBtnLabel = document.getElementById('theme-btn-label');
+        const btnClearChats = document.getElementById('btn-clear-chats');
         const toast = document.getElementById('toast');
 
-        // Modal Elements
+        // Modals
+        const dashModal = document.getElementById('dashboard-modal');
+        const btnOpenDashboard = document.getElementById('btn-open-dashboard');
+        const btnNavDashboard = document.getElementById('btn-nav-dashboard');
+        const btnCloseDash = document.getElementById('btn-close-dash');
+
+        const critiqueModal = document.getElementById('critique-modal');
+        const btnCloseCritique = document.getElementById('btn-close-critique');
+        const critiqueContent = document.getElementById('critique-content');
+
         const uploadModal = document.getElementById('upload-modal');
         const btnOpenUpload = document.getElementById('btn-open-upload');
-        const btnCloseModal = document.getElementById('btn-close-modal');
-        const modalDropzone = document.getElementById('modal-dropzone');
-        const modalFileInput = document.getElementById('modal-file-input');
-        const selectedFilename = document.getElementById('selected-filename');
-        const modalAirlineInput = document.getElementById('modal-airline-input');
-        const modalDescInput = document.getElementById('modal-desc-input');
-        const btnSubmitUpload = document.getElementById('btn-submit-upload');
-        const modalUploadStatus = document.getElementById('modal-upload-status');
+        const btnCloseUpload = document.getElementById('btn-close-upload');
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const fileChosen = document.getElementById('file-chosen');
+        const uploadAirline = document.getElementById('upload-airline');
+        const uploadDesc = document.getElementById('upload-desc');
+        const btnDoUpload = document.getElementById('btn-do-upload');
+        const uploadStatus = document.getElementById('upload-status');
 
-        // Initialize Application
+        // Init
         async function init() {
             applyTheme(state.theme);
             await fetchAirlines();
@@ -1255,166 +1217,161 @@
                 await loadThread(state.currentThreadId);
             }
 
-            setupEventListeners();
+            setupListeners();
         }
 
-        // Apply Dark/Light Theme
         function applyTheme(theme) {
             state.theme = theme;
             localStorage.setItem('policygpt_theme', theme);
             if (theme === 'light') {
                 document.documentElement.setAttribute('data-theme', 'light');
-                themeLabel.textContent = 'Switch to Dark Theme';
+                themeBtnLabel.textContent = 'Dark Mode';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                themeLabel.textContent = 'Switch to Light Theme';
+                themeBtnLabel.textContent = 'Light Mode';
             }
         }
 
-        // Fetch Airlines from Backend
         async function fetchAirlines() {
             try {
                 const res = await fetch('/api/airlines');
                 if (res.ok) {
                     const data = await res.json();
                     state.availableAirlines = data.airlines || [];
-                    document.getElementById('airline-count-badge').textContent = `${state.availableAirlines.length} Airlines`;
-                    
-                    airlineSelect.innerHTML = '<option value="">🌐 All Airlines (Search Everything)</option>';
-                    state.availableAirlines.forEach(airline => {
+                    airlineSelect.innerHTML = '<option value="">All Airlines (Default)</option>';
+                    state.availableAirlines.forEach(a => {
                         const opt = document.createElement('option');
-                        opt.value = airline;
-                        opt.textContent = `✈️ ${airline}`;
+                        opt.value = a;
+                        opt.textContent = a;
                         airlineSelect.appendChild(opt);
                     });
                 }
-            } catch (err) {
-                console.error('Failed to load airlines:', err);
-            }
+            } catch (e) {}
         }
 
-        // Setup Event Listeners
-        function setupEventListeners() {
-            // Sidebar toggle
-            btnToggleSidebar.addEventListener('click', () => sidebar.classList.add('collapsed'));
+        function setupListeners() {
+            btnToggleSidebar.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
             btnOpenSidebar.addEventListener('click', () => sidebar.classList.remove('collapsed'));
+            btnNewChat.addEventListener('click', startNewChat);
+            btnNavNew.addEventListener('click', startNewChat);
+            brandNewChat.addEventListener('click', startNewChat);
 
-            // New chat
-            btnNewChat.addEventListener('click', () => startNewChat());
-
-            // Keyboard shortcut Ctrl+K / Cmd+K for new chat
-            window.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                    e.preventDefault();
-                    startNewChat();
-                }
-            });
-
-            // Airline select change
             airlineSelect.addEventListener('change', (e) => {
                 state.activeAirline = e.target.value;
-                updateAirlineUI();
             });
 
-            // Input textarea auto-resize
-            chatTextarea.addEventListener('input', () => {
-                chatTextarea.style.height = 'auto';
-                chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 180) + 'px';
-                btnSend.disabled = !chatTextarea.value.trim() && !state.isGenerating;
-            });
-
-            // Textarea Enter / Shift+Enter
-            chatTextarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!state.isGenerating && chatTextarea.value.trim()) {
-                        sendMessage(chatTextarea.value.trim());
-                    }
-                }
-            });
-
-            // Send / Stop button
-            btnSend.addEventListener('click', () => {
-                if (state.isGenerating) {
-                    stopGeneration();
-                } else if (chatTextarea.value.trim()) {
-                    sendMessage(chatTextarea.value.trim());
-                }
-            });
-
-            // Prompt Cards click
+            // Prompt Cards
             document.querySelectorAll('.prompt-card').forEach(card => {
                 card.addEventListener('click', () => {
                     const prompt = card.getAttribute('data-prompt');
-                    const airline = card.getAttribute('data-airline');
-                    if (airline) {
-                        state.activeAirline = airline;
-                        airlineSelect.value = airline;
-                        updateAirlineUI();
+                    if (prompt) {
+                        chatTextarea.value = prompt;
+                        sendMessage(prompt);
                     }
-                    sendMessage(prompt);
                 });
             });
 
-            // Theme toggle
+            // Textarea auto-resize
+            chatTextarea.addEventListener('input', () => {
+                chatTextarea.style.height = 'auto';
+                chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 160) + 'px';
+                btnSend.disabled = !chatTextarea.value.trim();
+            });
+
+            chatTextarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const text = chatTextarea.value.trim();
+                    if (text && !state.isGenerating) {
+                        sendMessage(text);
+                    }
+                }
+            });
+
+            btnSend.addEventListener('click', () => {
+                if (state.isGenerating) {
+                    stopGeneration();
+                } else {
+                    const text = chatTextarea.value.trim();
+                    if (text) sendMessage(text);
+                }
+            });
+
             btnToggleTheme.addEventListener('click', () => {
                 applyTheme(state.theme === 'dark' ? 'light' : 'dark');
             });
 
-            // Export Chat
-            btnExportChat.addEventListener('click', exportConversation);
+            btnClearChats.addEventListener('click', clearAllChats);
 
-            // Clear All Chats
-            btnClearAll.addEventListener('click', clearAllChats);
+            // Dashboard Modal
+            const openDash = async () => {
+                dashModal.classList.add('open');
+                await loadDashboardStats();
+            };
+            btnOpenDashboard.addEventListener('click', openDash);
+            btnNavDashboard.addEventListener('click', openDash);
+            btnCloseDash.addEventListener('click', () => dashModal.classList.remove('open'));
+            dashModal.addEventListener('click', (e) => {
+                if (e.target === dashModal) dashModal.classList.remove('open');
+            });
 
-            // Modal handlers
+            // Dashboard Tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const target = btn.getAttribute('data-tab');
+                    ['tab-stats', 'tab-evals', 'tab-sandbox', 'tab-rules'].forEach(id => {
+                        document.getElementById(id).style.display = (id === target ? 'flex' : 'none');
+                    });
+                    if (target === 'tab-evals') loadDashboardLogs();
+                });
+            });
+
+            // Sandbox
+            document.getElementById('btn-sandbox-guard').addEventListener('click', testSandboxGuardrails);
+            document.getElementById('btn-sandbox-eval').addEventListener('click', testSandboxEval);
+
+            // Critique Modal
+            btnCloseCritique.addEventListener('click', () => critiqueModal.classList.remove('open'));
+            critiqueModal.addEventListener('click', (e) => {
+                if (e.target === critiqueModal) critiqueModal.classList.remove('open');
+            });
+
+            // Upload Modal
             btnOpenUpload.addEventListener('click', () => uploadModal.classList.add('open'));
-            btnCloseModal.addEventListener('click', () => uploadModal.classList.remove('open'));
+            btnCloseUpload.addEventListener('click', () => uploadModal.classList.remove('open'));
             uploadModal.addEventListener('click', (e) => {
                 if (e.target === uploadModal) uploadModal.classList.remove('open');
             });
 
-            modalDropzone.addEventListener('click', () => modalFileInput.click());
-            modalFileInput.addEventListener('change', handleFileSelected);
-            modalDropzone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                modalDropzone.classList.add('dragover');
-            });
-            modalDropzone.addEventListener('dragleave', () => modalDropzone.classList.remove('dragover'));
-            modalDropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                modalDropzone.classList.remove('dragover');
-                if (e.dataTransfer.files.length) {
-                    modalFileInput.files = e.dataTransfer.files;
-                    handleFileSelected();
+            dropzone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    fileChosen.textContent = `Selected: ${e.target.files[0].name}`;
+                    fileChosen.style.display = 'block';
                 }
             });
+            btnDoUpload.addEventListener('click', doUploadDocument);
 
-            btnSubmitUpload.addEventListener('click', submitDocumentUpload);
+            // Keyboard shortcut Ctrl+K
+            window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                    e.preventDefault();
+                    startNewChat();
+                }
+            });
         }
 
-        // Update Airline Filter indicator in UI
-        function updateAirlineUI() {
-            if (state.activeAirline) {
-                activeFilterIndicator.innerHTML = `✈️ Filter: ${state.activeAirline}`;
-                inputAirlineTag.innerHTML = `<span>Target: <strong>${state.activeAirline}</strong></span>`;
-            } else {
-                activeFilterIndicator.innerHTML = `🌐 All Airlines`;
-                inputAirlineTag.innerHTML = `<span>Target: All Airlines</span>`;
-            }
-        }
-
-        // Start a brand new chat session
         function startNewChat() {
             if (state.isGenerating) stopGeneration();
             state.currentThreadId = null;
             localStorage.removeItem('policygpt_current_thread');
-            
-            // Clear message DOM back to welcome view
+
             chatWrapper.innerHTML = '';
             chatWrapper.appendChild(welcomeView);
             welcomeView.style.display = 'flex';
-            
+
             chatTextarea.value = '';
             chatTextarea.style.height = 'auto';
             btnSend.disabled = true;
@@ -1422,71 +1379,59 @@
             chatTextarea.focus();
         }
 
-        // Send a message and stream response
         async function sendMessage(text) {
             if (state.isGenerating) return;
 
-            // Generate thread ID if new conversation
             if (!state.currentThreadId) {
                 state.currentThreadId = 'thread_' + Date.now();
                 localStorage.setItem('policygpt_current_thread', state.currentThreadId);
-                
-                // Add to threads list with title
-                const threadTitle = text.slice(0, 32) + (text.length > 32 ? '...' : '');
-                state.threads.unshift({
-                    id: state.currentThreadId,
-                    title: threadTitle,
-                    timestamp: new Date().toISOString()
-                });
+                const title = text.slice(0, 30) + (text.length > 30 ? '...' : '');
+                state.threads.unshift({ id: state.currentThreadId, title: title, timestamp: new Date().toISOString() });
                 saveThreads();
                 renderHistory();
             }
 
-            // Hide welcome screen
             welcomeView.style.display = 'none';
 
-            // Append User message to UI
-            appendUserMessage(text);
+            appendUserMsg(text);
             chatTextarea.value = '';
             chatTextarea.style.height = 'auto';
 
-            // Create Assistant Message container
-            const { contentEl, sourcesEl, actionsEl, rowEl } = appendAssistantMessage();
+            const { msgEl, footerEl } = appendAssistantMsg();
             scrollToBottom();
 
-            // Set state to generating
             state.isGenerating = true;
-            setSendButtonState(true);
+            setSendState(true);
 
-            // Prepare streaming fetch
             state.abortController = new AbortController();
-            let accumulatedText = '';
-            let sourcesList = [];
+            let accumulated = '';
+            let sources = [];
+            let evalRecord = null;
+            let guardReport = null;
 
             try {
-                const response = await fetch('/api/chat/stream', {
+                const res = await fetch('/api/chat/stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: text,
                         thread_id: state.currentThreadId,
-                        airline: state.activeAirline || null
+                        airline: state.activeAirline || null,
+                        enable_guardrails: true,
+                        enable_eval: true
                     }),
                     signal: state.abortController.signal
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Server returned status ${response.status}`);
-                }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-                const reader = response.body.getReader();
+                const reader = res.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
 
-                // Cursor element
                 const cursor = document.createElement('span');
-                cursor.className = 'cursor-blink';
-                contentEl.appendChild(cursor);
+                cursor.className = 'typing-cursor';
+                msgEl.appendChild(cursor);
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -1494,211 +1439,202 @@
 
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n\n');
-                    buffer = lines.pop(); // keep partial
+                    buffer = lines.pop();
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             try {
                                 const payload = JSON.parse(line.slice(6));
                                 if (payload.type === 'token') {
-                                    accumulatedText += payload.content;
-                                    contentEl.innerHTML = marked.parse(accumulatedText);
-                                    contentEl.appendChild(cursor);
+                                    accumulated += payload.content;
+                                    msgEl.innerHTML = marked.parse(accumulated);
+                                    msgEl.appendChild(cursor);
                                     scrollToBottom();
                                 } else if (payload.type === 'sources') {
-                                    sourcesList = payload.sources || [];
-                                } else if (payload.type === 'error') {
-                                    accumulatedText += `\n\n*Error: ${payload.message}*`;
-                                    contentEl.innerHTML = marked.parse(accumulatedText);
+                                    sources = payload.sources || [];
+                                } else if (payload.type === 'evaluation') {
+                                    evalRecord = payload.evaluation;
+                                    guardReport = payload.guardrails;
+                                } else if (payload.type === 'guardrail_violation') {
+                                    msgEl.innerHTML = `
+                                        <div class="guard-block-card">
+                                            <span style="font-size:1.2rem;">🛡️</span>
+                                            <div>
+                                                <div style="font-weight:600;margin-bottom:2px;">Safety Guardrail Notice (${payload.code})</div>
+                                                <div style="color:var(--text-muted);font-size:0.82rem;">${payload.message}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else if (payload.type === 'done') {
+                                    if (payload.evaluation) evalRecord = payload.evaluation;
+                                    if (payload.guardrails) guardReport = payload.guardrails;
                                 }
-                            } catch (e) {
-                                console.error('Error parsing SSE event:', e);
-                            }
+                            } catch (e) {}
                         }
                     }
                 }
 
-                // Remove cursor
                 cursor.remove();
-                contentEl.innerHTML = marked.parse(accumulatedText || 'No response generated.');
-
-                // Render Sources if any
-                if (sourcesList.length > 0) {
-                    renderSourcesAccordion(sourcesEl, sourcesList);
+                if (!msgEl.querySelector('.guard-block-card')) {
+                    msgEl.innerHTML = marked.parse(accumulated || 'No response generated.');
                 }
 
-                // Add action buttons
-                renderMessageActions(actionsEl, accumulatedText);
+                // Render clean message footer
+                renderMessageFooter(footerEl, accumulated, sources, evalRecord, guardReport);
 
             } catch (err) {
                 if (err.name === 'AbortError') {
-                    contentEl.innerHTML += '\n\n*(Generation stopped by user)*';
+                    msgEl.innerHTML += '\n\n*(Stopped)*';
                 } else {
-                    contentEl.innerHTML = `<span style="color:var(--danger)">I apologize, but an error occurred while processing: ${err.message}</span>`;
+                    msgEl.innerHTML = `<span style="color:var(--danger)">Error: ${err.message}</span>`;
                 }
             } finally {
                 state.isGenerating = false;
-                setSendButtonState(false);
+                setSendState(false);
                 scrollToBottom();
             }
         }
 
-        // Stop generation
         function stopGeneration() {
-            if (state.abortController) {
-                state.abortController.abort();
-            }
+            if (state.abortController) state.abortController.abort();
             state.isGenerating = false;
-            setSendButtonState(false);
+            setSendState(false);
         }
 
-        function setSendButtonState(isStreaming) {
-            if (isStreaming) {
-                btnSend.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>';
-                btnSend.classList.add('btn-stop');
+        function setSendState(generating) {
+            if (generating) {
+                btnSend.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>';
+                btnSend.classList.add('stop-mode');
                 btnSend.disabled = false;
-                btnSend.title = 'Stop generation';
             } else {
-                btnSend.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
-                btnSend.classList.remove('btn-stop');
+                btnSend.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+                btnSend.classList.remove('stop-mode');
                 btnSend.disabled = !chatTextarea.value.trim();
-                btnSend.title = 'Send message';
             }
         }
 
-        // Append User Message element
-        function appendUserMessage(text) {
+        function appendUserMsg(text) {
             const row = document.createElement('div');
             row.className = 'message-row user';
-
-            const bodyWrapper = document.createElement('div');
-            bodyWrapper.className = 'message-body-wrapper';
-
+            const body = document.createElement('div');
+            body.className = 'message-body';
             const content = document.createElement('div');
-            content.className = 'message-content';
+            content.className = 'message-text';
             content.textContent = text;
-
-            bodyWrapper.appendChild(content);
-
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar avatar-user';
-            avatar.textContent = 'U';
-
-            row.appendChild(bodyWrapper);
-            row.appendChild(avatar);
+            body.appendChild(content);
+            row.appendChild(body);
             chatWrapper.appendChild(row);
         }
 
-        // Append Assistant Message placeholder
-        function appendAssistantMessage() {
+        function appendAssistantMsg() {
             const row = document.createElement('div');
             row.className = 'message-row assistant';
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar avatar-bot';
-            avatar.innerHTML = '✈️';
+            avatar.textContent = '✈️';
 
-            const bodyWrapper = document.createElement('div');
-            bodyWrapper.className = 'message-body-wrapper';
-            bodyWrapper.style.width = '100%';
+            const body = document.createElement('div');
+            body.className = 'message-body';
+            body.style.width = '100%';
 
-            const contentEl = document.createElement('div');
-            contentEl.className = 'message-content';
+            const msgEl = document.createElement('div');
+            msgEl.className = 'message-text';
 
-            const sourcesEl = document.createElement('div');
+            const footerEl = document.createElement('div');
+            footerEl.className = 'message-footer';
 
-            const actionsEl = document.createElement('div');
-            actionsEl.className = 'message-actions-bar';
-
-            bodyWrapper.appendChild(contentEl);
-            bodyWrapper.appendChild(sourcesEl);
-            bodyWrapper.appendChild(actionsEl);
-
+            body.appendChild(msgEl);
+            body.appendChild(footerEl);
             row.appendChild(avatar);
-            row.appendChild(bodyWrapper);
+            row.appendChild(body);
             chatWrapper.appendChild(row);
 
-            return { contentEl, sourcesEl, actionsEl, rowEl: row };
+            return { msgEl, footerEl };
         }
 
-        // Render Sources Accordion
-        function renderSourcesAccordion(container, sources) {
-            const accordion = document.createElement('div');
-            accordion.className = 'sources-accordion';
+        // Clean & Compact Footer
+        function renderMessageFooter(container, text, sources, evaluation, guardrails) {
+            container.innerHTML = '';
 
-            const header = document.createElement('div');
-            header.className = 'sources-header';
-            header.innerHTML = `
-                <span style="display:flex;align-items:center;gap:6px;">
-                    📚 Referenced Documents (${sources.length})
-                </span>
-                <span style="font-size:0.75rem;color:var(--text-subtle);">Click to expand ▼</span>
-            `;
-
-            const content = document.createElement('div');
-            content.className = 'sources-content hidden';
-
-            sources.forEach(src => {
-                const card = document.createElement('div');
-                card.className = 'source-card';
-                card.innerHTML = `
-                    <div class="source-meta-row">
-                        <span class="source-file-badge">📄 ${src.file_name}</span>
-                        ${src.airline ? `<span class="source-airline-tag">${src.airline}</span>` : ''}
-                    </div>
-                    <div class="source-snippet">${src.content}</div>
-                `;
-                content.appendChild(card);
-            });
-
-            header.addEventListener('click', () => {
-                const isHidden = content.classList.contains('hidden');
-                if (isHidden) {
-                    content.classList.remove('hidden');
-                    header.querySelector('span:last-child').textContent = 'Click to collapse ▲';
-                } else {
-                    content.classList.add('hidden');
-                    header.querySelector('span:last-child').textContent = 'Click to expand ▼';
-                }
-            });
-
-            accordion.appendChild(header);
-            accordion.appendChild(content);
-            container.appendChild(accordion);
-        }
-
-        // Render copy & thumbs actions
-        function renderMessageActions(actionsEl, text) {
-            actionsEl.innerHTML = `
-                <button class="msg-action-btn copy-btn" title="Copy response">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                    Copy
-                </button>
-                <button class="msg-action-btn thumb-btn" title="Helpful answer">
-                    👍 Helpful
-                </button>
-            `;
-
-            const copyBtn = actionsEl.querySelector('.copy-btn');
+            // Copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'action-icon';
+            copyBtn.title = 'Copy';
+            copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
             copyBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(text);
-                copyBtn.innerHTML = '✓ Copied!';
-                showToast('Copied to clipboard!');
-                setTimeout(() => {
-                    copyBtn.innerHTML = `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                        Copy
-                    `;
-                }, 2000);
+                showToast('Copied to clipboard');
             });
+            container.appendChild(copyBtn);
 
-            const thumbBtn = actionsEl.querySelector('.thumb-btn');
-            thumbBtn.addEventListener('click', () => {
-                thumbBtn.classList.toggle('active');
-            });
+            // Sources pill (if available)
+            if (sources && sources.length > 0) {
+                const srcPill = document.createElement('button');
+                srcPill.className = 'meta-chip';
+                srcPill.innerHTML = `<span>📄</span> <span>${sources.length} Sources ▾</span>`;
+
+                const drawer = document.createElement('div');
+                drawer.className = 'sources-drawer';
+                sources.forEach(s => {
+                    const it = document.createElement('div');
+                    it.className = 'source-item';
+                    it.innerHTML = `
+                        <div class="source-title">${s.airline ? s.airline + ' • ' : ''}${s.file_name}</div>
+                        <div class="source-text">${s.content}</div>
+                    `;
+                    drawer.appendChild(it);
+                });
+
+                srcPill.addEventListener('click', () => {
+                    drawer.classList.toggle('open');
+                });
+
+                container.appendChild(srcPill);
+                container.parentNode.appendChild(drawer);
+            }
+
+            // Quality score pill (if available)
+            if (evaluation) {
+                const score = evaluation.scores_percent ? evaluation.scores_percent.overall : Math.round((evaluation.overall_score || 0) * 100);
+                const scorePill = document.createElement('button');
+                scorePill.className = 'meta-chip ' + (score >= 75 ? 'score-green' : 'score-amber');
+                scorePill.innerHTML = `<span>⭐</span> <span>${score}% Quality</span>`;
+                scorePill.title = 'Click to inspect evaluation details';
+                scorePill.addEventListener('click', () => {
+                    showCritique(evaluation);
+                });
+                container.appendChild(scorePill);
+            }
         }
 
-        // Load an existing thread from backend
+        function showCritique(ev) {
+            const overall = ev.scores_percent ? ev.scores_percent.overall : Math.round((ev.overall_score || 0) * 100);
+            const r = ev.reasoning || {};
+
+            critiqueContent.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-card);padding:12px;border-radius:8px;">
+                    <span style="font-weight:600;font-size:0.95rem;">Overall Judge Quality</span>
+                    <span style="font-weight:700;color:var(--accent);font-size:1.1rem;">${overall}%</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;font-size:0.82rem;">
+                    <div style="background:var(--bg-card);padding:10px;border-radius:8px;">
+                        <div style="font-weight:600;color:var(--accent-blue);margin-bottom:3px;">🎯 Context Relevance: ${Math.round((ev.context_relevance||0)*100)}%</div>
+                        <div style="color:var(--text-muted);">${r.context_relevance || 'Context directly addresses query.'}</div>
+                    </div>
+                    <div style="background:var(--bg-card);padding:10px;border-radius:8px;">
+                        <div style="font-weight:600;color:#34d399;margin-bottom:3px;">🔒 Groundedness (No Hallucinations): ${Math.round((ev.faithfulness||0)*100)}%</div>
+                        <div style="color:var(--text-muted);">${r.faithfulness || 'Claims strictly grounded in indexed policies.'}</div>
+                    </div>
+                    <div style="background:var(--bg-card);padding:10px;border-radius:8px;">
+                        <div style="font-weight:600;color:#fbbf24;margin-bottom:3px;">📋 Completeness: ${Math.round((ev.answer_completeness||0)*100)}%</div>
+                        <div style="color:var(--text-muted);">${r.answer_completeness || 'Response answers the question thoroughly.'}</div>
+                    </div>
+                </div>
+            `;
+            critiqueModal.classList.add('open');
+        }
+
         async function loadThread(threadId) {
             state.currentThreadId = threadId;
             localStorage.setItem('policygpt_current_thread', threadId);
@@ -1719,28 +1655,26 @@
                     } else {
                         messages.forEach(msg => {
                             if (msg.type === 'HumanMessage') {
-                                appendUserMessage(msg.content);
+                                appendUserMsg(msg.content);
                             } else if (msg.type === 'AIMessage') {
-                                const { contentEl, actionsEl } = appendAssistantMessage();
-                                contentEl.innerHTML = marked.parse(msg.content);
-                                renderMessageActions(actionsEl, msg.content);
+                                const { msgEl, footerEl } = appendAssistantMsg();
+                                msgEl.innerHTML = marked.parse(msg.content);
+                                renderMessageFooter(footerEl, msg.content, [], null, null);
                             }
                         });
                         scrollToBottom();
                     }
                 }
-            } catch (err) {
-                console.error('Failed to load thread:', err);
+            } catch (e) {
                 chatWrapper.appendChild(welcomeView);
                 welcomeView.style.display = 'flex';
             }
         }
 
-        // Render Conversation History
         function renderHistory() {
             historyList.innerHTML = '';
             if (state.threads.length === 0) {
-                historyList.innerHTML = '<div style="font-size:0.8rem;color:var(--text-subtle);padding:8px;">No conversations yet</div>';
+                historyList.innerHTML = '<div style="font-size:0.78rem;color:var(--text-subtle);padding:8px;">No chats yet</div>';
                 return;
             }
 
@@ -1748,39 +1682,32 @@
                 const item = document.createElement('div');
                 item.className = 'history-item' + (t.id === state.currentThreadId ? ' active' : '');
 
-                const textSpan = document.createElement('span');
-                textSpan.className = 'history-item-text';
-                textSpan.textContent = t.title || 'Conversation';
-                item.appendChild(textSpan);
+                const span = document.createElement('span');
+                span.className = 'history-text';
+                span.textContent = t.title || 'Chat';
+                item.appendChild(span);
 
-                const actions = document.createElement('div');
-                actions.className = 'history-actions';
-
-                // Delete chat button
-                const delBtn = document.createElement('button');
-                delBtn.className = 'action-icon-btn';
-                delBtn.title = 'Delete chat';
-                delBtn.innerHTML = '🗑️';
-                delBtn.addEventListener('click', (e) => {
+                const del = document.createElement('button');
+                del.className = 'history-del';
+                del.title = 'Delete';
+                del.innerHTML = '×';
+                del.addEventListener('click', (e) => {
                     e.stopPropagation();
                     deleteThread(t.id);
                 });
-
-                actions.appendChild(delBtn);
-                item.appendChild(actions);
+                item.appendChild(del);
 
                 item.addEventListener('click', () => loadThread(t.id));
                 historyList.appendChild(item);
             });
         }
 
-        // Delete single thread
         async function deleteThread(threadId) {
             state.threads = state.threads.filter(t => t.id !== threadId);
             saveThreads();
-            
             try {
                 await fetch(`/api/conversation/${threadId}`, { method: 'DELETE' });
+                await fetch(`/api/evaluations/${threadId}`, { method: 'DELETE' });
             } catch (e) {}
 
             if (state.currentThreadId === threadId) {
@@ -1790,13 +1717,12 @@
             }
         }
 
-        // Clear all chats
-        async function clearAllChats() {
-            if (confirm('Are you sure you want to clear all conversations?')) {
+        function clearAllChats() {
+            if (confirm('Clear all conversation history?')) {
                 state.threads = [];
                 saveThreads();
                 startNewChat();
-                showToast('All conversation history cleared');
+                showToast('History cleared');
             }
         }
 
@@ -1804,108 +1730,154 @@
             localStorage.setItem('policygpt_threads', JSON.stringify(state.threads));
         }
 
-        // Export Conversation as Markdown
-        async function exportConversation() {
-            if (!state.currentThreadId) {
-                showToast('No active conversation to export!');
-                return;
-            }
-
-            try {
-                const res = await fetch(`/api/conversation/${state.currentThreadId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    let md = `# PolicyGPT Conversation Export\n**Date:** ${new Date().toLocaleString()}\n**Thread ID:** ${state.currentThreadId}\n\n---\n\n`;
-                    (data.messages || []).forEach(m => {
-                        const role = m.type === 'HumanMessage' ? '### User' : '### PolicyGPT';
-                        md += `${role}\n${m.content}\n\n`;
-                    });
-
-                    const blob = new Blob([md], { type: 'text/markdown' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `airline-policy-${state.currentThreadId}.md`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    showToast('Conversation exported!');
-                }
-            } catch (err) {
-                showToast('Failed to export conversation');
-            }
+        function scrollToBottom() {
+            const c = document.getElementById('messages-container');
+            c.scrollTop = c.scrollHeight;
         }
 
-        // Document Upload Handling
-        function handleFileSelected() {
-            const file = modalFileInput.files[0];
-            if (file) {
-                selectedFilename.style.display = 'block';
-                selectedFilename.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-                btnSubmitUpload.disabled = false;
-            }
-        }
-
-        async function submitDocumentUpload() {
-            const file = modalFileInput.files[0];
-            if (!file) return;
-
-            btnSubmitUpload.disabled = true;
-            btnSubmitUpload.textContent = 'Uploading & Indexing into PGVector...';
-            modalUploadStatus.style.display = 'block';
-            modalUploadStatus.innerHTML = '<span style="color:var(--text-muted)">Processing document chunks and generating embeddings...</span>';
-
-            const formData = new FormData();
-            formData.append('file', file);
-            if (modalAirlineInput.value.trim()) {
-                formData.append('airline', modalAirlineInput.value.trim());
-            }
-            if (modalDescInput.value.trim()) {
-                formData.append('description', modalDescInput.value.trim());
-            }
-
-            try {
-                const res = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await res.json();
-
-                if (res.ok && result.success) {
-                    modalUploadStatus.innerHTML = `<span style="color:#4ade80;font-weight:600;">✓ ${result.message}</span>`;
-                    showToast('Document indexed into PGVector!');
-                    await fetchAirlines(); // refresh airlines list
-                    setTimeout(() => {
-                        uploadModal.classList.remove('open');
-                        modalUploadStatus.style.display = 'none';
-                        modalFileInput.value = '';
-                        selectedFilename.style.display = 'none';
-                        btnSubmitUpload.textContent = 'Upload & Index into PGVector';
-                    }, 1500);
-                } else {
-                    modalUploadStatus.innerHTML = `<span style="color:var(--danger)">Upload failed: ${result.message || 'Unknown error'}</span>`;
-                    btnSubmitUpload.disabled = false;
-                    btnSubmitUpload.textContent = 'Try Again';
-                }
-            } catch (err) {
-                modalUploadStatus.innerHTML = `<span style="color:var(--danger)">Error: ${err.message}</span>`;
-                btnSubmitUpload.disabled = false;
-                btnSubmitUpload.textContent = 'Try Again';
-            }
-        }
-
-        // Toast Helper
         function showToast(msg) {
             toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2400);
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 2000);
         }
 
-        // Scroll to bottom of chat
-        function scrollToBottom() {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Dashboard Stats Loader
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch('/api/evaluations/stats');
+                if (res.ok) {
+                    const data = await res.json();
+                    const s = data.stats || {};
+                    const g = data.guardrails || {};
+
+                    const ov = s.avg_overall_percent !== undefined ? s.avg_overall_percent : Math.round((s.avg_overall_score || 0) * 100);
+                    const rel = s.avg_context_relevance_percent !== undefined ? s.avg_context_relevance_percent : Math.round((s.avg_context_relevance || 0) * 100);
+                    const faith = s.avg_faithfulness_percent !== undefined ? s.avg_faithfulness_percent : Math.round((s.avg_faithfulness || 0) * 100);
+                    const comp = s.avg_answer_completeness_percent !== undefined ? s.avg_answer_completeness_percent : Math.round((s.avg_answer_completeness || 0) * 100);
+
+                    document.getElementById('dash-overall').textContent = `${ov}%`;
+                    document.getElementById('dash-relevance').textContent = `${rel}%`;
+                    document.getElementById('dash-faithfulness').textContent = `${faith}%`;
+                    document.getElementById('dash-completeness').textContent = `${comp}%`;
+
+                    document.getElementById('dash-telemetry').textContent = `Checks: ${g.total_checks || 0} | Passed: ${g.passed || 0} | Pass Rate: ${g.pass_rate_percent || 100}%`;
+                    document.getElementById('dash-tier').textContent = `Quality: ${s.quality_tier || 'A+'}`;
+                }
+            } catch (e) {}
         }
 
-        // Kickoff initialization
+        async function loadDashboardLogs() {
+            const list = document.getElementById('dash-evals-list');
+            list.innerHTML = '<div style="font-size:0.8rem;color:var(--text-subtle);">Loading...</div>';
+            try {
+                const res = await fetch('/api/evaluations?limit=20');
+                if (res.ok) {
+                    const data = await res.json();
+                    const evals = data.evaluations || [];
+                    if (evals.length === 0) {
+                        list.innerHTML = '<div style="font-size:0.8rem;color:var(--text-subtle);padding:6px;">No recorded evaluations yet.</div>';
+                        return;
+                    }
+                    list.innerHTML = '';
+                    evals.forEach(ev => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:8px;padding:10px;font-size:0.82rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;';
+                        const score = ev.scores_percent ? ev.scores_percent.overall : Math.round((ev.overall_score || 0) * 100);
+                        item.innerHTML = `
+                            <span style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px;">${ev.query}</span>
+                            <span style="color:var(--accent);font-weight:600;">${score}%</span>
+                        `;
+                        item.addEventListener('click', () => showCritique(ev));
+                        list.appendChild(item);
+                    });
+                }
+            } catch (e) {
+                list.innerHTML = '<div style="color:var(--danger);font-size:0.8rem;">Failed to load logs.</div>';
+            }
+        }
+
+        async function testSandboxGuardrails() {
+            const q = document.getElementById('sandbox-input').value.trim();
+            const out = document.getElementById('sandbox-output');
+            if (!q) return alert('Enter a prompt.');
+            out.style.display = 'block';
+            out.textContent = 'Checking guardrails...';
+            try {
+                const res = await fetch('/api/evaluations/guardrails/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: q, thread_id: 'test' })
+                });
+                const data = await res.json();
+                out.textContent = JSON.stringify(data.result, null, 2);
+            } catch (e) {
+                out.textContent = e.message;
+            }
+        }
+
+        async function testSandboxEval() {
+            const q = document.getElementById('sandbox-input').value.trim();
+            const out = document.getElementById('sandbox-output');
+            if (!q) return alert('Enter a prompt.');
+            out.style.display = 'block';
+            out.textContent = 'Evaluating with LLM-as-a-judge...';
+            try {
+                const res = await fetch('/api/evaluations/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: q,
+                        response: 'United Airlines allows 1 carry-on bag and 1 personal item for Economy and higher.',
+                        sources: [{ content: 'United baggage policy: 1 carry-on bag and 1 personal item permitted.' }]
+                    })
+                });
+                const data = await res.json();
+                out.textContent = JSON.stringify(data.evaluation, null, 2);
+            } catch (e) {
+                out.textContent = e.message;
+            }
+        }
+
+        async function doUploadDocument() {
+            const file = fileInput.files[0];
+            if (!file) return alert('Select a file.');
+
+            uploadStatus.style.display = 'block';
+            uploadStatus.style.color = 'var(--text-muted)';
+            uploadStatus.textContent = 'Indexing into PGVector...';
+            btnDoUpload.disabled = true;
+
+            const fd = new FormData();
+            fd.append('file', file);
+            if (uploadAirline.value.trim()) fd.append('airline', uploadAirline.value.trim());
+            if (uploadDesc.value.trim()) fd.append('description', uploadDesc.value.trim());
+
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    uploadStatus.style.color = 'var(--accent)';
+                    uploadStatus.textContent = `Indexed ${data.chunks_created || 0} chunks successfully!`;
+                    showToast('Document indexed!');
+                    await fetchAirlines();
+                    setTimeout(() => {
+                        uploadModal.classList.remove('open');
+                        uploadStatus.style.display = 'none';
+                        fileInput.value = '';
+                        fileChosen.style.display = 'none';
+                    }, 1500);
+                } else {
+                    uploadStatus.style.color = 'var(--danger)';
+                    uploadStatus.textContent = data.message || 'Upload failed.';
+                }
+            } catch (e) {
+                uploadStatus.style.color = 'var(--danger)';
+                uploadStatus.textContent = e.message;
+            } finally {
+                btnDoUpload.disabled = false;
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>

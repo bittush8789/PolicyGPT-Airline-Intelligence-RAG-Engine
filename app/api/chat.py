@@ -17,6 +17,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from app.models.schemas import ChatRequest, ChatResponse, AirlinesResponse
 from app.core.memory import get_conversation_memory, ConversationMemory
 from app.core.rag import get_rag_pipeline, RAGPipeline
+from app.core.guardrails import get_input_guardrails, get_output_guardrails
+from app.core.evaluator import get_evaluator
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -63,21 +65,67 @@ async def chat(
     conversation_memory: ConversationMemory = Depends(get_conversation_memory)
 ) -> ChatResponse:
     """
-    Process a chat message with optional airline filtering and return response with sources.
+    Process a chat message with guardrails validation, airline filtering, and RAG evaluation.
     """
     try:
-        logger.info(f"Processing chat message (airline={request.airline}): {request.message[:50]}...")
+        thread_id = request.thread_id or str(uuid.uuid4())
+        logger.info(f"Processing chat message (thread={thread_id}, airline={request.airline}): {request.message[:50]}...")
         
+        # 1. Input Guardrails Check
+        if request.enable_guardrails:
+            input_guard = get_input_guardrails()
+            guard_check = input_guard.check(request.message, thread_id)
+            if not guard_check["passed"]:
+                return ChatResponse(
+                    response=f"🛡️ **Safety Guardrail Notification**\n\n{guard_check['message']}",
+                    thread_id=thread_id,
+                    sources=[],
+                    guardrails={
+                        "passed": False,
+                        "code": guard_check["code"],
+                        "reason": guard_check["message"],
+                        "warnings": [guard_check["message"]],
+                        "violations": [guard_check["code"]]
+                    },
+                    evaluation=None
+                )
+        
+        # 2. Process message through LangGraph RAG memory
         result = conversation_memory.process_message(
             message=request.message,
-            thread_id=request.thread_id,
+            thread_id=thread_id,
             airline=request.airline
         )
+        raw_response = result["response"]
+        sources = result.get("sources", [])
+        
+        # 3. Output Guardrails Validation & Sanitization
+        output_guard_report = None
+        final_response = raw_response
+        if request.enable_guardrails:
+            output_guard = get_output_guardrails()
+            output_guard_report = output_guard.validate(raw_response, sources)
+            if output_guard_report.get("sanitized_text"):
+                final_response = output_guard_report["sanitized_text"]
+        
+        # 4. RAG Quality Evaluation (LLM-as-a-Judge)
+        eval_report = None
+        if request.enable_eval:
+            evaluator = get_evaluator()
+            eval_record = evaluator.evaluate(
+                query=request.message,
+                response=final_response,
+                sources=sources,
+                thread_id=thread_id
+            )
+            eval_report = eval_record.to_dict()
         
         response = ChatResponse(
-            response=result["response"],
+            response=final_response,
             thread_id=result["thread_id"],
-            sources=result.get("sources", [])
+            sources=sources,
+            guardrails=output_guard_report,
+            evaluation=eval_report
         )
         
         logger.info(f"Chat message processed successfully for thread {result['thread_id']}")
@@ -98,23 +146,51 @@ async def chat_stream(
     rag_pipeline: RAGPipeline = Depends(get_rag_pipeline)
 ):
     """
-    Stream token-by-token response via Server-Sent Events (SSE).
-    Returns retrieved citations and persists conversation turn to PostgreSQL.
+    Stream token-by-token response via Server-Sent Events (SSE) with real-time Guardrails & Evaluation.
     """
     thread_id = request.thread_id or str(uuid.uuid4())
     
     async def event_generator():
         try:
-            # 1. Build contextual question with past conversation history
+            # 1. Input Guardrails Check
+            if request.enable_guardrails:
+                input_guard = get_input_guardrails()
+                guard_check = input_guard.check(request.message, thread_id)
+                if not guard_check["passed"]:
+                    violation_payload = {
+                        "type": "guardrail_violation",
+                        "code": guard_check["code"],
+                        "message": guard_check["message"]
+                    }
+                    yield f"data: {json.dumps(violation_payload)}\n\n"
+                    
+                    alert_content = f"🛡️ **Safety Guardrail Notification**\n\n{guard_check['message']}"
+                    yield f"data: {json.dumps({'type': 'token', 'content': alert_content})}\n\n"
+                    
+                    done_payload = {
+                        "type": "done",
+                        "thread_id": thread_id,
+                        "guardrails": {
+                            "passed": False,
+                            "violations": [guard_check["code"]],
+                            "warnings": [guard_check["message"]]
+                        },
+                        "evaluation": None,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                    yield f"data: {json.dumps(done_payload)}\n\n"
+                    return
+            
+            # 2. Build contextual question with past conversation history
             contextual_question = conversation_memory.get_contextual_question(thread_id, request.message)
             
-            # 2. Get LLM stream and retrieved sources
+            # 3. Get LLM stream and retrieved sources
             token_stream, sources = rag_pipeline.stream_query(contextual_question, airline=request.airline)
             
-            # 3. Stream sources first or as metadata
+            # 4. Stream sources first or as metadata
             yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
             
-            # 4. Stream tokens
+            # 5. Stream tokens
             full_response_parts = []
             for chunk in token_stream:
                 token_text = chunk.content if hasattr(chunk, 'content') else str(chunk)
@@ -124,13 +200,34 @@ async def chat_stream(
             
             full_response = "".join(full_response_parts)
             
-            # 5. Persist the turn to LangGraph PostgreSQL state memory
+            # 6. Output Guardrails Validation
+            output_guard_report = None
+            if request.enable_guardrails:
+                output_guard = get_output_guardrails()
+                output_guard_report = output_guard.validate(full_response, sources)
+            
+            # 7. RAG Quality Evaluation (LLM-as-a-Judge)
+            eval_report = None
+            if request.enable_eval:
+                evaluator = get_evaluator()
+                eval_record = evaluator.evaluate(
+                    query=request.message,
+                    response=full_response,
+                    sources=sources,
+                    thread_id=thread_id
+                )
+                eval_report = eval_record.to_dict()
+                yield f"data: {json.dumps({'type': 'evaluation', 'evaluation': eval_report, 'guardrails': output_guard_report})}\n\n"
+            
+            # 8. Persist the turn to LangGraph PostgreSQL state memory
             conversation_memory.save_message_turn(thread_id, request.message, full_response)
             
-            # 6. Send completion signal
+            # 9. Send completion signal with evaluation and guardrails payload
             done_payload = {
                 "type": "done",
                 "thread_id": thread_id,
+                "guardrails": output_guard_report,
+                "evaluation": eval_report,
                 "timestamp": datetime.utcnow().isoformat()
             }
             yield f"data: {json.dumps(done_payload)}\n\n"

@@ -521,7 +521,13 @@ class RAGPipeline:
                 retrieved_docs = self.retrieve_docs(question, airline=airline)
                 context = self._format_docs(retrieved_docs)
                 messages = self.prompt_template.format_messages(context=context, question=question)
-                answer = self.llm.invoke(messages).content
+                answer = self.llm.invoke(
+                    messages,
+                    config={
+                        "tags": ["policygpt", "chat"],
+                        "metadata": {"airline": airline or "all", "retrieved_count": len(retrieved_docs)}
+                    }
+                ).content
             
             formatted_sources = [
                 {
@@ -579,7 +585,13 @@ class RAGPipeline:
         ]
         
         messages = self.prompt_template.format_messages(context=context, question=question)
-        token_stream = self.llm.stream(messages)
+        token_stream = self.llm.stream(
+            messages,
+            config={
+                "tags": ["policygpt", "stream"],
+                "metadata": {"airline": airline or "all", "retrieved_count": len(retrieved_docs)}
+            }
+        )
         return token_stream, formatted_sources
 
     def index_single_document(self, file_name: str, airline: Optional[str] = None, description: Optional[str] = None, reference_url: Optional[str] = None) -> Dict[str, Any]:

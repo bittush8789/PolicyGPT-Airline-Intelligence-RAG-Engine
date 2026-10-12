@@ -18,6 +18,10 @@ services:
       - DOCUMENTS_DIR=/app/documents
       - ADMIN_API_KEY=${ADMIN_API_KEY:-admin-secret-key-123}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-policygpt-airline-rag}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT:-https://api.smith.langchain.com}
     volumes:
       - ./app:/app/app
       - ./documents:/app/documents:rw

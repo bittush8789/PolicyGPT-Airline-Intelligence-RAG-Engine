@@ -16,7 +16,7 @@ import uvicorn
 from app.core.config import get_settings, validate_environment
 from app.core.rag import initialize_rag_pipeline
 from app.core.memory import initialize_conversation_memory
-from app.api import chat, health, admin
+from app.api import chat, health, admin, evaluations
 
 # Configure logging
 logging.basicConfig(
@@ -125,6 +125,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(admin.router, prefix="/api", tags=["admin"])
+app.include_router(evaluations.router, prefix="/api/evaluations", tags=["evaluations"])
 
 
 # Serve static files

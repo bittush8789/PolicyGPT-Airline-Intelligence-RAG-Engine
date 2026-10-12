@@ -58,7 +58,7 @@ async def check_groq_api() -> str:
         )
         
         response = llm.invoke("Hi")
-        if response and response.content:
+        if response and (response.content or getattr(response, "additional_kwargs", {}).get("reasoning_content") or getattr(response, "response_metadata", None)):
             return "available"
         else:
             return "error"
@@ -71,6 +71,13 @@ async def check_groq_api() -> str:
 # Legacy alias
 async def check_openai_api() -> str:
     return await check_groq_api()
+
+
+async def check_langsmith() -> str:
+    """Check LangSmith monitoring configuration."""
+    if settings.langchain_tracing_v2 and settings.langchain_api_key and not settings.langchain_api_key.startswith("lsv2_pt_your"):
+        return f"enabled (project: {settings.langchain_project})"
+    return "disabled"
 
 
 @router.get("/health")
@@ -110,12 +117,15 @@ async def health_check(
         elif groq_status == "unavailable":
             overall_status = "degraded"
         
+        langsmith_status = await check_langsmith()
+        
         response = HealthResponse(
             status=overall_status,
             vector_db=vector_db_status,
             state_db=state_db_status,
             groq_api=groq_status,
-            openai_api=groq_status
+            openai_api=groq_status,
+            langsmith=langsmith_status
         )
         
         logger.info(f"Health check completed: {overall_status}")

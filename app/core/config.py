@@ -49,6 +49,12 @@ class Settings:
         
         # Admin API Configuration
         self.admin_api_key = self._get_required("ADMIN_API_KEY")
+        
+        # LangSmith Monitoring Configuration
+        self.langchain_tracing_v2 = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() in ("true", "1", "yes")
+        self.langchain_api_key = os.getenv("LANGCHAIN_API_KEY", "")
+        self.langchain_project = os.getenv("LANGCHAIN_PROJECT", "policygpt-airline-rag")
+        self.langchain_endpoint = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
     
     def _get_required(self, env_var: str) -> str:
         """Get a required environment variable, raising an error if missing."""
@@ -111,5 +117,15 @@ def validate_environment() -> bool:
         logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
         return False
     
+    # Configure and validate LangSmith Tracing
+    if settings.langchain_tracing_v2 and settings.langchain_api_key and not settings.langchain_api_key.startswith("lsv2_pt_your"):
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key
+        os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+        os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
+        logger.info(f"✓ LangSmith Tracing V2: ENABLED (Project: '{settings.langchain_project}')")
+    else:
+        logger.info("ℹ LangSmith Tracing V2: Disabled (set LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY to monitor in LangSmith)")
+
     logger.info("All required database environment variables are set")
     return True
